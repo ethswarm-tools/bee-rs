@@ -44,6 +44,13 @@ format follows [Keep a Changelog]; the project adheres to
     counters, `from_blank` / `from_state` constructors, signed
     `Envelope` per chunk. Mirrors bee-js `Stamper` and bee-go
     `postage.Stamper`.
+  - `postage::marshal_stamp` /
+    `postage::convert_envelope_to_marshaled_stamp` — serialize a
+    stamp into the 113-byte wire format Bee expects when a stamp
+    travels alongside a chunk (`batchID || index || timestamp ||
+    signature`). Mirrors bee-go `MarshalStamp` /
+    `ConvertEnvelopeToMarshaledStamp` and bee-js `marshalStamp` /
+    `convertEnvelopeToMarshaledStamp`.
   - `swarm::cid` — `convert_reference_to_cid` /
     `convert_cid_to_reference` for the Swarm manifest (`0xfa`) and
     feed (`0xfb`) multicodecs. Inline RFC 4648 base32 (no padding).
@@ -63,4 +70,4 @@ format follows [Keep a Changelog]; the project adheres to
   bigint-as-string chain-state decoder. The SOC eth-signed-message
   digest and the `span || payload` SOC body framing are correct
   from day one too.
-- 223 unit + integration tests pass; clippy clean; doc clean.
+- 225 unit + integration tests pass; clippy clean; doc clean.

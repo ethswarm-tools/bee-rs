@@ -19,6 +19,10 @@ pub const NUM_BUCKETS: usize = 1 << 16;
 /// this value (matches bee-go and bee-js, which require `depth > 16`).
 pub const MIN_DEPTH: u8 = 16;
 
+/// Wire-format length of a marshaled postage stamp:
+/// `batchID(32) || index(8) || timestamp(8) || signature(65)`.
+pub const MARSHALED_STAMP_LENGTH: usize = 32 + 8 + 8 + 65;
+
 /// Per-chunk postage envelope returned by [`Stamper::stamp`].
 ///
 /// Mirrors bee-js `EnvelopeWithBatchId` and bee-go `postage.Envelope`.
@@ -158,6 +162,48 @@ impl Stamper {
     }
 }
 
+/// Concatenate the components of a postage stamp into the wire format
+/// Bee expects when a stamp travels alongside a chunk:
+/// `batchID(32) || index(8) || timestamp(8) || signature(65)` — 113
+/// bytes total. Mirrors bee-go `postage.MarshalStamp` and bee-js
+/// `marshalStamp`.
+pub fn marshal_stamp(
+    batch_id: &BatchId,
+    index: &[u8],
+    timestamp: &[u8],
+    signature: &Signature,
+) -> Result<[u8; MARSHALED_STAMP_LENGTH], Error> {
+    if index.len() != 8 {
+        return Err(Error::argument(format!(
+            "invalid index length: {}",
+            index.len()
+        )));
+    }
+    if timestamp.len() != 8 {
+        return Err(Error::argument(format!(
+            "invalid timestamp length: {}",
+            timestamp.len()
+        )));
+    }
+    let mut out = [0u8; MARSHALED_STAMP_LENGTH];
+    out[..32].copy_from_slice(batch_id.as_bytes());
+    out[32..40].copy_from_slice(index);
+    out[40..48].copy_from_slice(timestamp);
+    out[48..].copy_from_slice(signature.as_bytes());
+    Ok(out)
+}
+
+/// Marshal an [`Envelope`] into the 113-byte stamp wire format. Thin
+/// wrapper over [`marshal_stamp`] for callers that already hold a
+/// structured envelope (typically from [`Stamper::stamp`]). Mirrors
+/// bee-go `ConvertEnvelopeToMarshaledStamp` / bee-js
+/// `convertEnvelopeToMarshaledStamp`.
+pub fn convert_envelope_to_marshaled_stamp(
+    env: &Envelope,
+) -> Result<[u8; MARSHALED_STAMP_LENGTH], Error> {
+    marshal_stamp(&env.batch_id, &env.index, &env.timestamp, &env.signature)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -233,6 +279,41 @@ mod tests {
     #[test]
     fn rejects_wrong_state_length() {
         assert!(Stamper::from_state(signer(), batch(), vec![0u32; 10], 18).is_err());
+    }
+
+    #[test]
+    fn marshal_stamp_round_trip_matches_layout() {
+        let batch_id = BatchId::new(&[0xaa; 32]).unwrap();
+        let mut stamper = Stamper::from_blank(signer(), batch_id, 17).unwrap();
+        let chunk_addr = [0x42u8; 32];
+        let env = stamper.stamp(&chunk_addr).unwrap();
+
+        let bytes = convert_envelope_to_marshaled_stamp(&env).unwrap();
+        assert_eq!(bytes.len(), MARSHALED_STAMP_LENGTH);
+        assert_eq!(&bytes[..32], batch_id.as_bytes());
+        assert_eq!(&bytes[32..40], &env.index);
+        assert_eq!(&bytes[40..48], &env.timestamp);
+        assert_eq!(&bytes[48..], env.signature.as_bytes());
+
+        // Timestamp parses as a sane Unix-ms value (within 24 h of now).
+        let mut ts = [0u8; 8];
+        ts.copy_from_slice(&bytes[40..48]);
+        let ts = u64::from_be_bytes(ts);
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        assert!(ts <= now_ms);
+        assert!(now_ms - ts < 24 * 60 * 60 * 1000);
+    }
+
+    #[test]
+    fn marshal_stamp_rejects_short_index_or_timestamp() {
+        let batch_id = BatchId::new(&[0u8; 32]).unwrap();
+        let sig = crate::swarm::typed_bytes::Signature::new(&[0xab; 65]).unwrap();
+        assert!(marshal_stamp(&batch_id, &[1, 2, 3], &[0u8; 8], &sig).is_err());
+        assert!(marshal_stamp(&batch_id, &[0u8; 8], &[1, 2], &sig).is_err());
+        assert!(marshal_stamp(&batch_id, &[0u8; 8], &[0u8; 8], &sig).is_ok());
     }
 
     #[test]

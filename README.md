@@ -130,6 +130,8 @@ equivalent. All bee-rs methods are `async`.
 | ------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- |
 | `new Stamper(signer, batchId, depth)` | `postage.NewStamper(signer, batchID, depth)`          | `bee::postage::Stamper::from_blank(signer, batch_id, depth)?`          |
 | `Stamper.stamp(chunk)`                | `(*Stamper).Stamp(chunkAddr)`                         | `stamper.stamp(&chunk_addr)?` → `bee::postage::Envelope`               |
+| `convertEnvelopeToMarshaledStamp(env)`| `postage.ConvertEnvelopeToMarshaledStamp(env)`        | `bee::postage::convert_envelope_to_marshaled_stamp(&env)?` (113 bytes) |
+| `marshalStamp(sig, batch, ts, idx)`   | `postage.MarshalStamp(batch, idx, ts, sig)`           | `bee::postage::marshal_stamp(&batch, &idx, &ts, &sig)?`                 |
 | `convertReferenceToCid(ref, type)`    | `swarm.ConvertReferenceToCID(ref, type)`              | `bee::swarm::convert_reference_to_cid(&reference, CidType::Feed)?`     |
 | `convertCidToReference(cid)`          | `swarm.ConvertCIDToReference(cid)`                    | `bee::swarm::convert_cid_to_reference(&cid)?`                          |
 
