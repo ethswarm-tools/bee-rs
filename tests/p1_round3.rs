@@ -154,13 +154,13 @@ async fn upload_collection_entries_sends_tar_and_collection_header() {
 
 #[tokio::test]
 async fn get_grantees_returns_list() {
+    // Live Bee returns a bare JSON array, not a `{ "grantees": [...] }`
+    // wrapper. (Caught by the P4 soak — see CHANGELOG.)
     let server = MockServer::start().await;
     let r = reference();
     Mock::given(method("GET"))
         .and(path(format!("/grantee/{}", r.to_hex())))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "grantees": ["02aa", "03bb"]
-        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!(["02aa", "03bb"])))
         .mount(&server)
         .await;
 

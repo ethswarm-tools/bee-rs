@@ -78,7 +78,8 @@ fn hash_directory_matches_in_memory_hash() {
 // =====================================================================
 
 #[tokio::test]
-async fn wallet_parses_bigint_balances() {
+async fn wallet_parses_legacy_shape_pre_2_7_2() {
+    // Bee ≤ 2.7.1 returned bzzAddress / nativeAddress / chequebook.
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/wallet"))
@@ -96,9 +97,38 @@ async fn wallet_parses_bigint_balances() {
 
     let client = Client::new(&server.uri()).unwrap();
     let w = client.debug().wallet().await.unwrap();
-    assert_eq!(w.bzz_address, "0xbzz");
+    assert_eq!(w.bzz_address.as_deref(), Some("0xbzz"));
+    assert_eq!(w.native_address.as_deref(), Some("0xnat"));
+    // `chequebook` legacy field is aliased onto chequebook_contract_address.
+    assert_eq!(w.chequebook_contract_address.as_deref(), Some("0xcb"));
     assert_eq!(w.bzz_balance.unwrap(), BigInt::from(1000));
     assert_eq!(w.native_token_balance.unwrap(), BigInt::from(2000));
+    assert_eq!(w.chain_id, 100);
+}
+
+#[tokio::test]
+async fn wallet_parses_2_7_2_shape() {
+    // Bee 2.7.2+ drops bzzAddress / nativeAddress and renames chequebook
+    // to chequebookContractAddress.
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/wallet"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "bzzBalance": "1000",
+            "nativeTokenBalance": "2000",
+            "chainID": 100,
+            "chequebookContractAddress": "0xcb-new",
+            "walletAddress": "0xw",
+        })))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let w = client.debug().wallet().await.unwrap();
+    assert!(w.bzz_address.is_none());
+    assert!(w.native_address.is_none());
+    assert_eq!(w.chequebook_contract_address.as_deref(), Some("0xcb-new"));
+    assert_eq!(w.bzz_balance.unwrap(), BigInt::from(1000));
     assert_eq!(w.chain_id, 100);
 }
 

@@ -69,19 +69,51 @@ format follows [Keep a Changelog]; the project adheres to
   returns this field as a JSON integer (head-of-chain block number),
   not a hex hash string. Matches bee-go `ChainStateResponse.ChainTip`
   and bee-js `ChainState.chainTip`.
+- **`debug::Wallet`**: `bzz_address` / `native_address` /
+  `chequebook` are now `Option<String>` and the chequebook field is
+  renamed to `chequebook_contract_address` (with serde alias for the
+  legacy `chequebook` key). Bee 2.7.2 / API 8.0.0 dropped the two
+  address fields entirely and renamed the chequebook key. Both old
+  and new wire shapes round-trip; covered by two new wiremock tests.
 - **`debug::SUPPORTED_API_VERSION`**: `7.4.1` → `8.0.0`.
 - **`debug::SUPPORTED_BEE_VERSION_EXACT`**: `2.7.1-61fab37b` →
   `2.7.2-rc1-83612d37` (matches the build the integration check is
   green against).
-- **`examples/integration-check`** retries the post-update feed
-  lookup with backoff up to 30 s — newly uploaded SOC chunks need a
-  moment to be retrievable on a live network.
+
+### Added (P4)
+- **`PostageApi::create_postage_batch_with_options`** — full
+  `PostageBatchOptions` support (label / immutable / gas-price /
+  gas-limit). The legacy three-arg `create_postage_batch` now routes
+  through it under the hood. Needed to buy non-immutable batches for
+  the live mutable-batch lifecycle test.
+- **`examples/integration-check`** is now a comprehensive soak:
+  - Read-only operator/accounting/chequebook/loggers sweep
+    (status / peers / readiness / wallet / balances / accounting /
+    stake / redistribution_state / chequebook_balance / settlements /
+    loggers / pending_transactions, plus `is_gateway` / `reserve_state`).
+  - `get_postage_batches` (list).
+  - `get_storage_cost` end-to-end on the live chain state.
+  - Direct `upload_chunk` / `download_chunk` round-trip.
+  - Encrypted upload (`encrypt: Some(true)`, 64-byte reference,
+    body round-trip).
+  - `create_feed_manifest` / `find_next_index` / `is_retrievable`
+    against a freshly-uploaded reference.
+  - `FeedReader` / `FeedWriter` round-trip with retry budget.
+  - `reupload` (stewardship).
+  - `post_envelope`, `create_grantees`, `get_grantees` (ACT).
+  - PSS + GSOC websocket subscribe smoke (single-node testnet
+    cannot exercise cross-node delivery; subscription open + clean
+    cancel is the verifiable bit).
+  - Mutable-batch lifecycle (gated on `BEE_MUTABLE_BATCH_ID` or
+    `BEE_BUY_MUTABLE=1`): poll for usable, top_up_batch,
+    dilute_batch.
 
 ### Notes (P4)
-- **24/24 pass against a live Bee 2.7.2-rc1 on Sepolia**: read-only
-  connectivity, postage batch lifecycle, bytes/file/collection
-  upload + download, pin/tag, feeds, PSS, GSOC. Reused an existing
-  batch via `BEE_BATCH_ID` (Sepolia first-usability is slow).
+- The expanded soak passes against a live Bee 2.7.2-rc1 on Sepolia.
+  Two real wire-format bugs surfaced and were fixed (`chain_tip`
+  type, `Wallet` field renames). The remaining single-node
+  limitations (PSS/GSOC self-send across neighborhoods) are
+  documented in the example.
 
 ### Notes
 - bee-go's three live-Bee bug fixes are baked in from day one:

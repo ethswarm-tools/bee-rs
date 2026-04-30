@@ -32,15 +32,26 @@ fn de_opt_bigint<'de, D: Deserializer<'de>>(d: D) -> Result<Option<BigInt>, D::E
 }
 
 /// `GET /wallet` response. Mirrors bee-go `WalletResponse`.
+///
+/// **API-version note:** Bee 2.7.2 / API 8.0.0 dropped the legacy
+/// `bzzAddress` / `nativeAddress` fields and renamed `chequebook` to
+/// `chequebookContractAddress`. We accept both spellings: the legacy
+/// fields are optional, and `chequebook_contract_address` carries an
+/// alias for the old `chequebook` key so older Bee builds still parse.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Wallet {
-    /// BZZ address (eth address used for BZZ token).
-    pub bzz_address: String,
-    /// Native token (xDAI/ETH) address.
-    pub native_address: String,
-    /// Chequebook contract address.
-    pub chequebook: String,
+    /// Legacy BZZ address field (Bee ≤ 2.7.1). `None` on 2.7.2+.
+    #[serde(default)]
+    pub bzz_address: Option<String>,
+    /// Legacy native-token address field (Bee ≤ 2.7.1). `None` on 2.7.2+.
+    #[serde(default)]
+    pub native_address: Option<String>,
+    /// Chequebook contract address. Accepts the new
+    /// `chequebookContractAddress` key (Bee 2.7.2+) and falls back to
+    /// the legacy `chequebook` key.
+    #[serde(default, alias = "chequebook")]
+    pub chequebook_contract_address: Option<String>,
     /// BZZ balance in PLUR.
     #[serde(default, deserialize_with = "de_opt_bigint")]
     pub bzz_balance: Option<BigInt>,

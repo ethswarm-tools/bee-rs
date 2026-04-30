@@ -171,12 +171,10 @@ impl ApiService {
     pub async fn get_grantees(&self, reference: &Reference) -> Result<Vec<String>, Error> {
         let path = format!("grantee/{}", reference.to_hex());
         let builder = request(&self.inner, Method::GET, &path)?;
-        #[derive(Deserialize)]
-        struct Resp {
-            grantees: Vec<String>,
-        }
-        let r: Resp = self.inner.send_json(builder).await?;
-        Ok(r.grantees)
+        // Live Bee returns a bare JSON array `["pk1", "pk2", …]`. The
+        // earlier `{ "grantees": [...] }` wrapper shape never shipped.
+        let v: Vec<String> = self.inner.send_json(builder).await?;
+        Ok(v)
     }
 
     /// Create a new grantee list — `POST /grantee`.

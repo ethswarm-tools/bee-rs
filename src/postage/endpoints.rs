@@ -4,6 +4,7 @@ use num_bigint::BigInt;
 use reqwest::Method;
 use serde::Deserialize;
 
+use crate::api::PostageBatchOptions;
 use crate::client::request;
 use crate::swarm::{BatchId, Error};
 
@@ -67,10 +68,44 @@ impl PostageApi {
         depth: u8,
         label: Option<&str>,
     ) -> Result<BatchId, Error> {
+        let opts = label.map(|l| PostageBatchOptions {
+            label: Some(l.to_string()),
+            ..Default::default()
+        });
+        self.create_postage_batch_with_options(amount, depth, opts.as_ref())
+            .await
+    }
+
+    /// Buy a new postage batch with full options support. Mirrors
+    /// bee-js `Bee.createPostageBatch` and bee-go's options-style
+    /// constructor — `label` and `immutable` map to query parameters,
+    /// `gas_price` / `gas_limit` map to `Gas-Price` / `Gas-Limit` headers.
+    pub async fn create_postage_batch_with_options(
+        &self,
+        amount: &BigInt,
+        depth: u8,
+        opts: Option<&PostageBatchOptions>,
+    ) -> Result<BatchId, Error> {
         let path = format!("stamps/{amount}/{depth}");
         let mut builder = request(&self.inner, Method::POST, &path)?;
-        if let Some(l) = label {
-            builder = builder.query(&[("label", l)]);
+        if let Some(o) = opts {
+            let mut query: Vec<(&str, String)> = Vec::new();
+            if let Some(l) = &o.label {
+                query.push(("label", l.clone()));
+            }
+            if let Some(im) = o.immutable {
+                query.push(("immutable", im.to_string()));
+            }
+            if !query.is_empty() {
+                let q: Vec<(&str, &str)> = query.iter().map(|(k, v)| (*k, v.as_str())).collect();
+                builder = builder.query(&q);
+            }
+            if let Some(gp) = &o.gas_price {
+                builder = builder.header("Gas-Price", gp);
+            }
+            if let Some(gl) = &o.gas_limit {
+                builder = builder.header("Gas-Limit", gl);
+            }
         }
         let res: BatchIdResp = self.inner.send_json(builder).await?;
         BatchId::from_hex(&res.batch_id)
