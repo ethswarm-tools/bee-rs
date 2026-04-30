@@ -8,9 +8,11 @@
 //! [`wire::unmarshal`].
 
 mod helpers;
+pub mod locator;
 pub mod node;
 pub mod wire;
 
+pub use locator::{ResourceLocator, resolve_path, target_reference};
 pub use node::{
     Fork, MAX_PREFIX_LENGTH, MantarayNode, NULL_ADDRESS, PATH_SEPARATOR, TYPE_EDGE, TYPE_VALUE,
     TYPE_WITH_METADATA, TYPE_WITH_PATH_SEPARATOR, is_null_address,

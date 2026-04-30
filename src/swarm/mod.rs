@@ -5,6 +5,7 @@
 
 pub mod bmt;
 pub mod bytes;
+pub mod duration;
 pub mod errors;
 pub mod file_chunker;
 pub mod gsoc;
@@ -12,6 +13,7 @@ pub mod keys;
 pub mod network;
 pub mod size;
 pub mod soc;
+pub mod tokens;
 pub mod typed_bytes;
 
 pub use bmt::{
@@ -22,8 +24,10 @@ pub use errors::{Error, RESPONSE_BODY_CAP, Result};
 pub use file_chunker::{ChunkerRoot, FileChunker, MAX_BRANCHES, SealedChunk};
 pub use gsoc::{GSOC_DEFAULT_PROXIMITY, GSOC_MINE_START, gsoc_mine, proximity};
 pub use keys::{PrivateKey, PublicKey, eth_signed_message_digest};
+pub use duration::Duration as BeeDuration;
 pub use network::Network;
 pub use size::Size;
+pub use tokens::{BZZ_DIGITS, Bzz, DAI_DIGITS, Dai};
 pub use soc::{
     SingleOwnerChunk, calculate_single_owner_chunk_address, make_single_owner_chunk,
     unmarshal_single_owner_chunk,

@@ -2,8 +2,7 @@
 
 Rust client for the [Swarm](https://www.ethswarm.org/) Bee API.
 
-**Status:** scaffolding. Module skeleton in place; implementation
-tracked in [`../bee-rs-parity-plan.md`](../bee-rs-parity-plan.md).
+**Status:** scaffolding. Module skeleton in place.
 
 The functional target is parity with [bee-js] (canonical TypeScript
 client) and [bee-go] (typed Go port). bee-go is the primary reference
