@@ -8,9 +8,9 @@ pub mod result;
 
 pub use endpoints::{ApiService, EnvelopeResponse, GranteeResponse, Tag};
 pub use options::{
-    CollectionUploadOptions, DownloadOptions, FileUploadOptions, HeaderPairs, PostageBatchOptions,
-    RedundancyLevel, RedundancyStrategy, RedundantUploadOptions, UploadOptions,
-    prepare_collection_upload_headers, prepare_download_headers, prepare_file_upload_headers,
-    prepare_redundant_upload_headers, prepare_upload_headers,
+    CollectionUploadOptions, DownloadOptions, FileUploadOptions, HeaderPairs, OnEntryFn,
+    PostageBatchOptions, RedundancyLevel, RedundancyStrategy, RedundantUploadOptions,
+    UploadOptions, UploadProgress, prepare_collection_upload_headers, prepare_download_headers,
+    prepare_file_upload_headers, prepare_redundant_upload_headers, prepare_upload_headers,
 };
 pub use result::{FileHeaders, UploadResult, parse_content_disposition_filename};

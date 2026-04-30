@@ -8,6 +8,7 @@
 
 mod endpoints;
 mod stamp_math;
+mod stamper;
 mod types;
 
 use std::sync::Arc;
@@ -18,6 +19,7 @@ pub use stamp_math::{
     EFFECTIVE_SIZE_BREAKPOINTS, get_depth_for_size, get_stamp_cost, get_stamp_effective_bytes,
     get_stamp_theoretical_bytes, get_stamp_usage,
 };
+pub use stamper::{Envelope, MIN_DEPTH, NUM_BUCKETS, Stamper};
 pub use types::{BatchBucket, GlobalPostageBatch, PostageBatch, PostageBatchBuckets};
 
 /// Handle exposing the postage endpoints. Cheap to clone.

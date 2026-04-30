@@ -50,7 +50,7 @@ impl FileApi {
 
     /// Download raw bytes via `GET /bytes/{ref}`. Returns the full body
     /// in memory. For streaming downloads use
-    /// [`FileApi::download_data_stream`].
+    /// [`FileApi::download_data_response`](Self::download_data_response).
     pub async fn download_data(
         &self,
         reference: &Reference,

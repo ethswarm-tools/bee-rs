@@ -9,8 +9,9 @@ use reqwest::Method;
 use serde::Deserialize;
 
 use crate::api::{
-    CollectionUploadOptions, DownloadOptions, FileHeaders, FileUploadOptions, UploadResult,
-    prepare_collection_upload_headers, prepare_download_headers, prepare_file_upload_headers,
+    CollectionUploadOptions, DownloadOptions, FileHeaders, FileUploadOptions, UploadProgress,
+    UploadResult, prepare_collection_upload_headers, prepare_download_headers,
+    prepare_file_upload_headers,
 };
 use crate::client::{Inner, request};
 use crate::manifest::{MantarayNode, populate_self_addresses};
@@ -139,6 +140,17 @@ impl FileApi {
         entries: &[CollectionEntry],
         opts: Option<&CollectionUploadOptions>,
     ) -> Result<UploadResult, Error> {
+        if let Some(cb) = opts.and_then(|o| o.on_entry.as_ref()) {
+            let total = entries.len();
+            for (i, entry) in entries.iter().enumerate() {
+                cb(UploadProgress {
+                    path: &entry.path,
+                    size: entry.data.len() as u64,
+                    index: i,
+                    total,
+                });
+            }
+        }
         let tar_bytes = build_tar_archive(entries)?;
         let builder = request(&self.inner, Method::POST, "bzz")?
             .header("Content-Type", "application/x-tar")

@@ -115,12 +115,23 @@ equivalent. All bee-rs methods are `async`.
 | ------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
 | `Bee.updateFeed(signer, topic, data)` | `c.File.UpdateFeed(ctx, batch, signer, topic, …)`   | `client.file().update_feed(&batch, &signer, &topic, data).await` |
 | `Bee.fetchLatestFeedUpdate(...)`      | `c.File.FetchLatestFeedUpdate(ctx, owner, topic)`   | `client.file().fetch_latest_feed_update(&owner, &topic).await`   |
+| `Bee.makeFeedReader(topic, owner)`    | _n/a_                                               | `client.file().make_feed_reader(owner, topic)`                   |
+| `Bee.makeFeedWriter(topic, signer)`   | _n/a_                                               | `client.file().make_feed_writer(signer, topic)?`                 |
 | `Bee.uploadSoc(...)`                  | `c.File.UploadSOC(ctx, batch, owner, id, sig, …)`   | `client.file().upload_soc(&batch, &owner, &id, &sig, data, …)`   |
 | `Bee.gsocSend(batch, signer, id, …)`  | `gsocSvc.Send(ctx, batch, signer, id, data, opts)`  | `client.gsoc().send(&batch, &signer, &id, data, opts).await`     |
 | `Bee.gsocSubscribe(owner, id)`        | `gsocSvc.Subscribe(ctx, owner, id)`                 | `client.gsoc().subscribe(&owner, &id).await`                     |
 | `Bee.pssSend(topic, target, data, …)` | `pssSvc.PssSend(ctx, batch, topic, target, …)`      | `client.pss().send(&batch, &topic, target, data, recipient).await` |
 | `Bee.pssSubscribe(topic)`             | `api.PSSSubscribe(ctx, base, dialer, topic)`        | `client.pss().subscribe(&topic).await`                           |
 | `Bee.pssReceive(topic, timeout)`      | _n/a_                                               | `client.pss().receive(&topic, timeout).await`                    |
+
+### Offline primitives
+
+| bee-js                                | bee-go                                                | bee-rs                                                                |
+| ------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- |
+| `new Stamper(signer, batchId, depth)` | `postage.NewStamper(signer, batchID, depth)`          | `bee::postage::Stamper::from_blank(signer, batch_id, depth)?`          |
+| `Stamper.stamp(chunk)`                | `(*Stamper).Stamp(chunkAddr)`                         | `stamper.stamp(&chunk_addr)?` → `bee::postage::Envelope`               |
+| `convertReferenceToCid(ref, type)`    | `swarm.ConvertReferenceToCID(ref, type)`              | `bee::swarm::convert_reference_to_cid(&reference, CidType::Feed)?`     |
+| `convertCidToReference(cid)`          | `swarm.ConvertCIDToReference(cid)`                    | `bee::swarm::convert_cid_to_reference(&cid)?`                          |
 
 ### Storage helpers (top-level, bee-js only)
 

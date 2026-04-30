@@ -5,6 +5,7 @@
 
 pub mod bmt;
 pub mod bytes;
+pub mod cid;
 pub mod duration;
 pub mod errors;
 pub mod file_chunker;
@@ -19,6 +20,10 @@ pub mod typed_bytes;
 pub use bmt::{
     CHUNK_SIZE, Chunk, MAX_PAYLOAD_SIZE, MIN_PAYLOAD_SIZE, SEGMENT_SIZE, SEGMENTS_COUNT,
     calculate_chunk_address, keccak256, make_content_addressed_chunk,
+};
+pub use cid::{
+    CidType, DecodedCid, FEED_CODEC, MANIFEST_CODEC, convert_cid_to_reference,
+    convert_reference_to_cid,
 };
 pub use duration::Duration as BeeDuration;
 pub use errors::{Error, RESPONSE_BODY_CAP, Result};

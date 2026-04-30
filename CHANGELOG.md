@@ -38,6 +38,24 @@ format follows [Keep a Changelog]; the project adheres to
   test on stable + MSRV 1.85 / doc), `rustfmt.toml`, `clippy.toml`,
   this changelog, `RELEASE.md`, and an `examples/integration-check`
   smoke test against a live Bee node.
+- **P5 parity gaps.** Closed the remaining gaps surfaced by the
+  bee-js / bee-go audit:
+  - `postage::Stamper` — client-side postage stamper. Per-bucket
+    counters, `from_blank` / `from_state` constructors, signed
+    `Envelope` per chunk. Mirrors bee-js `Stamper` and bee-go
+    `postage.Stamper`.
+  - `swarm::cid` — `convert_reference_to_cid` /
+    `convert_cid_to_reference` for the Swarm manifest (`0xfa`) and
+    feed (`0xfb`) multicodecs. Inline RFC 4648 base32 (no padding).
+  - `file::FeedReader` / `file::FeedWriter` plus
+    `FileApi::make_feed_reader` / `make_feed_writer` — bee-js-style
+    factory wrappers around the existing free-method feed surface.
+  - `api::CollectionUploadOptions::on_entry` — per-entry progress
+    callback fired before the collection is packed and uploaded.
+    Matches bee-js `streamDirectory` `onUploadProgress`.
+- **Doc lints fixed.** Cleared two pre-existing broken intra-doc
+  links so `cargo doc --no-deps` runs clean under
+  `RUSTDOCFLAGS=-Dwarnings`.
 
 ### Notes
 - bee-go's three live-Bee bug fixes are baked in from day one:
@@ -45,4 +63,4 @@ format follows [Keep a Changelog]; the project adheres to
   bigint-as-string chain-state decoder. The SOC eth-signed-message
   digest and the `span || payload` SOC body framing are correct
   from day one too.
-- 202 unit + integration tests pass; clippy clean.
+- 223 unit + integration tests pass; clippy clean; doc clean.

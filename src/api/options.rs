@@ -4,7 +4,28 @@
 //! "explicitly false" — matching bee-go's `*bool` semantics. `None`
 //! omits the header; `Some(false)` sends the literal string `"false"`.
 
+use std::fmt;
+use std::sync::Arc;
+
 use crate::swarm::{BatchId, PublicKey, Reference};
+
+/// Per-entry signal emitted by `upload_collection` /
+/// `upload_collection_entries` when an [`UploadProgress`] callback is
+/// configured. Mirrors bee-js `streamDirectory` `onUploadProgress`.
+#[derive(Debug, Clone, Copy)]
+pub struct UploadProgress<'a> {
+    /// Relative path of the entry inside the collection.
+    pub path: &'a str,
+    /// Size of the entry in bytes.
+    pub size: u64,
+    /// 0-based index of the entry within the collection.
+    pub index: usize,
+    /// Total number of entries in the collection.
+    pub total: usize,
+}
+
+/// Boxed callback invoked once per entry when uploading a collection.
+pub type OnEntryFn = Arc<dyn for<'a> Fn(UploadProgress<'a>) + Send + Sync>;
 
 /// Data redundancy level applied at upload time. Mirrors bee-js
 /// `RedundancyLevel`.
@@ -103,8 +124,8 @@ pub struct FileUploadOptions {
 }
 
 /// Collection upload options for tar `POST /bzz`. Mirrors bee-go
-/// `CollectionUploadOptions`.
-#[derive(Clone, Debug, Default)]
+/// `CollectionUploadOptions` and bee-js `streamDirectory` opts.
+#[derive(Clone, Default)]
 pub struct CollectionUploadOptions {
     /// Inherited base options.
     pub base: UploadOptions,
@@ -114,6 +135,35 @@ pub struct CollectionUploadOptions {
     pub error_document: Option<String>,
     /// Redundancy level (`Off` omits the header).
     pub redundancy_level: Option<RedundancyLevel>,
+    /// Per-entry progress callback. Invoked once per entry before the
+    /// collection is packed and uploaded — useful for surfacing what
+    /// is about to be sent without waiting for completion.
+    pub on_entry: Option<OnEntryFn>,
+}
+
+impl CollectionUploadOptions {
+    /// Set the per-entry progress callback. Builder convenience for
+    /// callers that don't want to construct the [`OnEntryFn`] type
+    /// themselves.
+    pub fn with_on_entry<F>(mut self, f: F) -> Self
+    where
+        F: for<'a> Fn(UploadProgress<'a>) + Send + Sync + 'static,
+    {
+        self.on_entry = Some(Arc::new(f));
+        self
+    }
+}
+
+impl fmt::Debug for CollectionUploadOptions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CollectionUploadOptions")
+            .field("base", &self.base)
+            .field("index_document", &self.index_document)
+            .field("error_document", &self.error_document)
+            .field("redundancy_level", &self.redundancy_level)
+            .field("on_entry", &self.on_entry.as_ref().map(|_| "<callback>"))
+            .finish()
+    }
 }
 
 /// Download options. All fields are optional; `Default::default()`

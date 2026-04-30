@@ -7,6 +7,7 @@
 //! `keccak256(topic || BE-uint64(index))`; the chunk payload is
 //! `BE-uint64(timestamp) || data`.
 
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bytes::Bytes;
@@ -14,7 +15,7 @@ use reqwest::Method;
 use serde::Deserialize;
 
 use crate::api::{DownloadOptions, UploadResult};
-use crate::client::request;
+use crate::client::{Inner, request};
 use crate::swarm::{
     BatchId, Error, EthAddress, Identifier, PrivateKey, Reference, Topic, bmt::keccak256,
     make_single_owner_chunk,
@@ -223,6 +224,161 @@ impl FileApi {
             }
         }
         Ok(true)
+    }
+
+    /// Construct a [`FeedReader`] bound to `(owner, topic)`. Mirrors
+    /// bee-js `Bee.makeFeedReader`.
+    pub fn make_feed_reader(&self, owner: EthAddress, topic: Topic) -> FeedReader {
+        FeedReader {
+            inner: self.inner.clone(),
+            owner,
+            topic,
+        }
+    }
+
+    /// Construct a [`FeedWriter`] bound to `(signer, topic)`. Owner is
+    /// derived from `signer.public_key().address()`. Mirrors bee-js
+    /// `Bee.makeFeedWriter`.
+    pub fn make_feed_writer(&self, signer: PrivateKey, topic: Topic) -> Result<FeedWriter, Error> {
+        let owner = signer.public_key()?.address();
+        Ok(FeedWriter {
+            reader: FeedReader {
+                inner: self.inner.clone(),
+                owner,
+                topic,
+            },
+            signer,
+        })
+    }
+}
+
+/// Reader bound to a `(owner, topic)` pair. Wraps the lower-level
+/// `FileApi` feed methods for callers that prefer the bee-js
+/// `FeedReader` shape.
+#[derive(Clone, Debug)]
+pub struct FeedReader {
+    inner: Arc<Inner>,
+    owner: EthAddress,
+    topic: Topic,
+}
+
+impl FeedReader {
+    /// Owner address.
+    pub fn owner(&self) -> &EthAddress {
+        &self.owner
+    }
+
+    /// Feed topic.
+    pub fn topic(&self) -> &Topic {
+        &self.topic
+    }
+
+    fn api(&self) -> FileApi {
+        FileApi {
+            inner: self.inner.clone(),
+        }
+    }
+
+    /// Fetch the most recent feed update.
+    pub async fn download(&self) -> Result<FeedUpdate, Error> {
+        self.api()
+            .fetch_latest_feed_update(&self.owner, &self.topic)
+            .await
+    }
+
+    /// Resolve the feed manifest reference (`GET /feeds/{owner}/{topic}`).
+    pub async fn lookup(&self) -> Result<Reference, Error> {
+        self.api().get_feed_lookup(&self.owner, &self.topic).await
+    }
+
+    /// Index where the next feed update will be written.
+    pub async fn next_index(&self) -> Result<u64, Error> {
+        self.api().find_next_index(&self.owner, &self.topic).await
+    }
+
+    /// True iff the feed currently resolves on the network.
+    pub async fn is_retrievable(
+        &self,
+        index: Option<u64>,
+        opts: Option<&DownloadOptions>,
+    ) -> Result<bool, Error> {
+        self.api()
+            .is_feed_retrievable(&self.owner, &self.topic, index, opts)
+            .await
+    }
+}
+
+/// Writer bound to a `(signer, topic)` pair. Owner is derived from
+/// the signer.
+#[derive(Clone, Debug)]
+pub struct FeedWriter {
+    reader: FeedReader,
+    signer: PrivateKey,
+}
+
+impl FeedWriter {
+    /// Owner address derived from the signer.
+    pub fn owner(&self) -> &EthAddress {
+        self.reader.owner()
+    }
+
+    /// Feed topic.
+    pub fn topic(&self) -> &Topic {
+        self.reader.topic()
+    }
+
+    /// Read side of this writer.
+    pub fn reader(&self) -> &FeedReader {
+        &self.reader
+    }
+
+    fn api(&self) -> FileApi {
+        FileApi {
+            inner: self.reader.inner.clone(),
+        }
+    }
+
+    /// Update the feed at the next available index. Mirrors bee-js
+    /// `FeedWriter.uploadPayload`.
+    pub async fn upload_payload(
+        &self,
+        batch_id: &BatchId,
+        data: &[u8],
+    ) -> Result<UploadResult, Error> {
+        self.api()
+            .update_feed(batch_id, &self.signer, self.reader.topic(), data)
+            .await
+    }
+
+    /// Update the feed to point at `reference`. Mirrors bee-js
+    /// `FeedWriter.uploadReference`.
+    pub async fn upload_reference(
+        &self,
+        batch_id: &BatchId,
+        reference: &Reference,
+        index: Option<u64>,
+    ) -> Result<UploadResult, Error> {
+        self.api()
+            .update_feed_with_reference(
+                batch_id,
+                &self.signer,
+                self.reader.topic(),
+                reference,
+                index,
+            )
+            .await
+    }
+
+    /// Update the feed at a specific index.
+    pub async fn upload_payload_at(
+        &self,
+        batch_id: &BatchId,
+        index: u64,
+        data: &[u8],
+    ) -> Result<UploadResult, Error> {
+        self.api()
+            .update_feed_with_index(batch_id, &self.signer, self.reader.topic(), index, data)
+            .await
     }
 }
 

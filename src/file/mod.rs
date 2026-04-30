@@ -14,7 +14,9 @@ pub use bzz::{
     read_directory_entries,
 };
 pub use data::ReferenceInformation;
-pub use feeds::{FeedUpdate, feed_update_chunk_reference, make_feed_identifier};
+pub use feeds::{
+    FeedReader, FeedUpdate, FeedWriter, feed_update_chunk_reference, make_feed_identifier,
+};
 pub use soc::{SocReader, SocWriter, soc_address};
 
 use std::sync::Arc;
