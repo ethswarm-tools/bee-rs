@@ -168,11 +168,7 @@ impl MantarayNode {
         out
     }
 
-    fn collect_into<'a>(
-        &'a self,
-        prefix: &[u8],
-        out: &mut Vec<(Vec<u8>, &'a MantarayNode)>,
-    ) {
+    fn collect_into<'a>(&'a self, prefix: &[u8], out: &mut Vec<(Vec<u8>, &'a MantarayNode)>) {
         for fork in self.forks.values() {
             let mut full = prefix.to_vec();
             full.extend_from_slice(&fork.prefix);
@@ -557,10 +553,7 @@ mod tests {
         root.add_fork(b"abc", Some(&r32(0x03)), None);
         let mut paths: Vec<Vec<u8>> = root.collect().into_iter().map(|(p, _)| p).collect();
         paths.sort();
-        assert_eq!(
-            paths,
-            vec![b"a".to_vec(), b"ab".to_vec(), b"abc".to_vec()]
-        );
+        assert_eq!(paths, vec![b"a".to_vec(), b"ab".to_vec(), b"abc".to_vec()]);
     }
 
     #[test]

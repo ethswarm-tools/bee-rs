@@ -5,13 +5,13 @@
 
 use std::time::Duration;
 
+use bee::Client;
 use bee::dev::DevClient;
 use bee::file::{CollectionEntry, hash_collection_entries, hash_directory};
 use bee::storage::{
     calculate_top_up_for_bzz, get_duration_extension_cost, get_size_extension_cost,
 };
 use bee::swarm::{BatchId, Identifier, Network, PrivateKey, Size, Topic};
-use bee::Client;
 use futures_util::SinkExt;
 use num_bigint::BigInt;
 use serde_json::json;
@@ -37,8 +37,7 @@ async fn upload_collection_walks_filesystem() {
         .and(header("Swarm-Collection", "true"))
         .and(header_exists("Swarm-Postage-Batch-Id"))
         .respond_with(
-            ResponseTemplate::new(201)
-                .set_body_json(json!({ "reference": expected_ref.clone() })),
+            ResponseTemplate::new(201).set_body_json(json!({ "reference": expected_ref.clone() })),
         )
         .mount(&server)
         .await;
@@ -117,9 +116,7 @@ async fn chequebook_balance_and_deposit() {
     Mock::given(method("POST"))
         .and(path("/chequebook/deposit"))
         .and(query_param("amount", "100"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({"transactionHash": "0xdep"})),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"transactionHash": "0xdep"})))
         .mount(&server)
         .await;
 
@@ -128,7 +125,11 @@ async fn chequebook_balance_and_deposit() {
     assert_eq!(bal.total_balance, BigInt::from(500));
     assert_eq!(bal.available_balance, BigInt::from(300));
 
-    let h = client.debug().chequebook_deposit(&BigInt::from(100)).await.unwrap();
+    let h = client
+        .debug()
+        .chequebook_deposit(&BigInt::from(100))
+        .await
+        .unwrap();
     assert_eq!(h, "0xdep");
 }
 
@@ -138,9 +139,7 @@ async fn cashout_last_cheque_sends_gas_price_header() {
     Mock::given(method("POST"))
         .and(path("/chequebook/cashout/peer1"))
         .and(header("gas-price", "5"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({"transactionHash": "0xch"})),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"transactionHash": "0xch"})))
         .mount(&server)
         .await;
 
@@ -173,7 +172,10 @@ async fn settlements_total_and_per_peer() {
     assert_eq!(s.total_received.unwrap(), BigInt::from(100));
     assert_eq!(s.total_sent.unwrap(), BigInt::from(200));
     assert_eq!(s.settlements.len(), 1);
-    assert_eq!(s.settlements[0].received.as_ref().unwrap(), &BigInt::from(50));
+    assert_eq!(
+        s.settlements[0].received.as_ref().unwrap(),
+        &BigInt::from(50)
+    );
 }
 
 #[tokio::test]
@@ -263,12 +265,13 @@ async fn pss_subscribe_yields_messages_pushed_by_server() {
         let (stream, _) = listener.accept().await.unwrap();
         // Validate the HTTP upgrade path and forward two messages.
         let path_topic = path_topic.clone();
-        let cb = move |req: &tokio_tungstenite::tungstenite::handshake::server::Request,
-                       resp: tokio_tungstenite::tungstenite::handshake::server::Response| {
-            let want = format!("/pss/subscribe/{path_topic}");
-            assert_eq!(req.uri().path(), want);
-            Ok(resp)
-        };
+        let cb =
+            move |req: &tokio_tungstenite::tungstenite::handshake::server::Request,
+                  resp: tokio_tungstenite::tungstenite::handshake::server::Response| {
+                let want = format!("/pss/subscribe/{path_topic}");
+                assert_eq!(req.uri().path(), want);
+                Ok(resp)
+            };
         let mut ws = tokio_tungstenite::accept_hdr_async(stream, cb)
             .await
             .unwrap();
@@ -302,8 +305,7 @@ async fn gsoc_send_uploads_to_soc_endpoint_at_signer_address() {
         .and(path(format!("/soc/{}/{}", owner.to_hex(), id.to_hex())))
         .and(header_exists("Swarm-Postage-Batch-Id"))
         .respond_with(
-            ResponseTemplate::new(201)
-                .set_body_json(json!({ "reference": expected_ref.clone() })),
+            ResponseTemplate::new(201).set_body_json(json!({ "reference": expected_ref.clone() })),
         )
         .mount(&server)
         .await;
@@ -441,12 +443,15 @@ async fn calculate_top_up_for_bzz_returns_difference() {
 
     let client = Client::new(&server.uri()).unwrap();
     assert_eq!(
-        calculate_top_up_for_bzz(&client, &id, &BigInt::from(250)).await.unwrap(),
+        calculate_top_up_for_bzz(&client, &id, &BigInt::from(250))
+            .await
+            .unwrap(),
         BigInt::from(150)
     );
     assert_eq!(
-        calculate_top_up_for_bzz(&client, &id, &BigInt::from(50)).await.unwrap(),
+        calculate_top_up_for_bzz(&client, &id, &BigInt::from(50))
+            .await
+            .unwrap(),
         BigInt::from(0)
     );
 }
-

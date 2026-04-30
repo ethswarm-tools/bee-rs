@@ -7,8 +7,8 @@ use serde::Deserialize;
 use crate::client::request;
 use crate::swarm::{BatchId, Error};
 
-use super::types::{GlobalPostageBatch, PostageBatch, PostageBatchBuckets};
 use super::PostageApi;
+use super::types::{GlobalPostageBatch, PostageBatch, PostageBatchBuckets};
 
 #[derive(Deserialize)]
 struct StampsResp {

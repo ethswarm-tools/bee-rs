@@ -21,10 +21,12 @@ pub struct UploadResult {
 impl UploadResult {
     /// Parse from the JSON-decoded reference hex plus the response
     /// headers. Mirrors bee-go `ReadUploadResult`.
-    pub fn from_response(ref_hex: &str, headers: &reqwest::header::HeaderMap) -> Result<Self, Error> {
+    pub fn from_response(
+        ref_hex: &str,
+        headers: &reqwest::header::HeaderMap,
+    ) -> Result<Self, Error> {
         let reference = Reference::from_hex(ref_hex)?;
-        let tag_uid = header_str(headers, "swarm-tag")
-            .and_then(|s| s.parse::<u32>().ok());
+        let tag_uid = header_str(headers, "swarm-tag").and_then(|s| s.parse::<u32>().ok());
         let history_address = header_str(headers, "swarm-act-history-address")
             .and_then(|s| Reference::from_hex(s).ok());
         Ok(Self {
@@ -144,9 +146,7 @@ mod tests {
     #[test]
     fn file_headers_parse_rfc5987_filename() {
         assert_eq!(
-            parse_content_disposition_filename(
-                "attachment; filename*=UTF-8''my%20file.txt"
-            ),
+            parse_content_disposition_filename("attachment; filename*=UTF-8''my%20file.txt"),
             Some("my%20file.txt".to_string())
         );
     }
@@ -161,9 +161,6 @@ mod tests {
 
     #[test]
     fn file_headers_no_filename_returns_none() {
-        assert_eq!(
-            parse_content_disposition_filename("attachment"),
-            None
-        );
+        assert_eq!(parse_content_disposition_filename("attachment"), None);
     }
 }

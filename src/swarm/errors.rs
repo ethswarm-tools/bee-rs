@@ -82,7 +82,9 @@ pub enum Error {
 impl Error {
     /// Build an [`Error::Argument`].
     pub fn argument<M: Into<String>>(msg: M) -> Self {
-        Error::Argument { message: msg.into() }
+        Error::Argument {
+            message: msg.into(),
+        }
     }
 
     /// Build an [`Error::Crypto`].
@@ -108,10 +110,7 @@ impl Error {
 /// [`RESPONSE_BODY_CAP`] bytes of the body so a giant error page can't
 /// blow up memory.
 pub async fn response_error_from(resp: reqwest::Response) -> Error {
-    let method = resp
-        .url()
-        .as_str()
-        .to_owned();
+    let method = resp.url().as_str().to_owned();
     // reqwest does not expose the request method on Response. Callers
     // that need the method should wrap with their own context — this
     // helper is for the common case where Response is the only thing
@@ -148,7 +147,10 @@ mod tests {
             expected: &[32, 64],
             got: 16,
         };
-        assert_eq!(format!("{e}"), "invalid Reference length: got 16, expected [32, 64]");
+        assert_eq!(
+            format!("{e}"),
+            "invalid Reference length: got 16, expected [32, 64]"
+        );
     }
 
     #[test]

@@ -47,10 +47,7 @@ impl DebugApi {
     /// `GET /loggers/{base64(expression)}` — loggers matching the
     /// regex / subsystem expression. The expression is base64-encoded
     /// per the Bee `/loggers/{exp}` contract.
-    pub async fn loggers_by_expression(
-        &self,
-        expression: &str,
-    ) -> Result<LoggerListing, Error> {
+    pub async fn loggers_by_expression(&self, expression: &str) -> Result<LoggerListing, Error> {
         let enc = STANDARD.encode(expression.as_bytes());
         let path = format!("loggers/{enc}");
         let builder = request(&self.inner, Method::GET, &path)?;

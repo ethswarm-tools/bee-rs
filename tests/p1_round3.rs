@@ -6,13 +6,11 @@ use std::time::Duration;
 
 use bee::Client;
 use bee::file::CollectionEntry;
-use bee::storage::{StorageOptions, buy_storage, get_storage_cost, extend_storage_size};
+use bee::storage::{StorageOptions, buy_storage, extend_storage_size, get_storage_cost};
 use bee::swarm::{BatchId, Network, Reference, Size};
 use num_bigint::BigInt;
 use serde_json::json;
-use wiremock::matchers::{
-    body_partial_json, header, header_exists, method, path, query_param,
-};
+use wiremock::matchers::{body_partial_json, header, header_exists, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 fn batch() -> BatchId {
@@ -48,13 +46,7 @@ async fn upload_file_sends_name_query_and_content_type() {
     let client = Client::new(&server.uri()).unwrap();
     let r = client
         .file()
-        .upload_file(
-            &batch(),
-            b"hi".to_vec(),
-            "hello.txt",
-            "text/plain",
-            None,
-        )
+        .upload_file(&batch(), b"hi".to_vec(), "hello.txt", "text/plain", None)
         .await
         .unwrap();
     assert_eq!(r.reference.to_hex(), expected_ref);
@@ -138,8 +130,7 @@ async fn upload_collection_entries_sends_tar_and_collection_header() {
         .and(header("Swarm-Collection", "true"))
         .and(header_exists("Swarm-Postage-Batch-Id"))
         .respond_with(
-            ResponseTemplate::new(201)
-                .set_body_json(json!({ "reference": expected_ref.clone() })),
+            ResponseTemplate::new(201).set_body_json(json!({ "reference": expected_ref.clone() })),
         )
         .mount(&server)
         .await;
@@ -167,11 +158,9 @@ async fn get_grantees_returns_list() {
     let r = reference();
     Mock::given(method("GET"))
         .and(path(format!("/grantee/{}", r.to_hex())))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({
-                "grantees": ["02aa", "03bb"]
-            })),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "grantees": ["02aa", "03bb"]
+        })))
         .mount(&server)
         .await;
 
@@ -212,7 +201,10 @@ async fn patch_grantees_sends_history_and_act_headers() {
     Mock::given(method("PATCH"))
         .and(path(format!("/grantee/{}", r.to_hex())))
         .and(header_exists("Swarm-Postage-Batch-Id"))
-        .and(header("Swarm-Act-History-Address", history.to_hex().as_str()))
+        .and(header(
+            "Swarm-Act-History-Address",
+            history.to_hex().as_str(),
+        ))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "ref": "11".repeat(32),
             "historyref": "22".repeat(32),
@@ -301,7 +293,11 @@ async fn connect_peer_strips_leading_slash() {
         .await;
 
     let client = Client::new(&server.uri()).unwrap();
-    let addr = client.debug().connect_peer("/dns/bee.example.com").await.unwrap();
+    let addr = client
+        .debug()
+        .connect_peer("/dns/bee.example.com")
+        .await
+        .unwrap();
     assert_eq!(addr, "ovr");
 }
 
@@ -358,7 +354,10 @@ async fn pending_transactions_lists_records() {
     assert_eq!(txs.len(), 1);
     assert_eq!(txs[0].transaction_hash, "0xtx1");
     assert_eq!(txs[0].nonce, 17);
-    assert_eq!(txs[0].gas_price.as_ref().unwrap(), &BigInt::from(1_000_000_000u64));
+    assert_eq!(
+        txs[0].gas_price.as_ref().unwrap(),
+        &BigInt::from(1_000_000_000u64)
+    );
     assert!(txs[0].gas_tip_cap.is_none());
 }
 
@@ -368,10 +367,7 @@ async fn cancel_transaction_sends_gas_price_header() {
     Mock::given(method("DELETE"))
         .and(path("/transactions/0xabc"))
         .and(header("gas-price", "5000000000"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_json(json!({"transactionHash": "0xnew"})),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"transactionHash": "0xnew"})))
         .mount(&server)
         .await;
 
@@ -402,7 +398,10 @@ async fn balances_parses_bigint_strings() {
     let b = client.debug().balances().await.unwrap();
     assert_eq!(b.len(), 2);
     assert_eq!(b[0].peer, "p1");
-    assert_eq!(b[0].balance, "1000000000000000000".parse::<BigInt>().unwrap());
+    assert_eq!(
+        b[0].balance,
+        "1000000000000000000".parse::<BigInt>().unwrap()
+    );
     assert_eq!(b[1].balance, BigInt::from(0));
 }
 
@@ -442,9 +441,7 @@ async fn stake_get_and_deposit() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/stake"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({"stakedAmount": "12345"})),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"stakedAmount": "12345"})))
         .mount(&server)
         .await;
     Mock::given(method("POST"))
@@ -560,10 +557,7 @@ async fn buy_storage_creates_postage_batch_with_computed_amount() {
     Mock::given(method("POST"))
         .and(path("/stamps/120/18"))
         .and(query_param("label", "demo"))
-        .respond_with(
-            ResponseTemplate::new(201)
-                .set_body_json(json!({"batchID": "ab".repeat(32)})),
-        )
+        .respond_with(ResponseTemplate::new(201).set_body_json(json!({"batchID": "ab".repeat(32)})))
         .mount(&server)
         .await;
 

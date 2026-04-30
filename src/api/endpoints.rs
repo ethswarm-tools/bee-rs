@@ -131,11 +131,7 @@ impl ApiService {
     // ---- stewardship --------------------------------------------------
 
     /// Re-upload locally pinned data — `PUT /stewardship/{ref}`.
-    pub async fn reupload(
-        &self,
-        reference: &Reference,
-        batch_id: &BatchId,
-    ) -> Result<(), Error> {
+    pub async fn reupload(&self, reference: &Reference, batch_id: &BatchId) -> Result<(), Error> {
         let path = format!("stewardship/{}", reference.to_hex());
         let builder = request(&self.inner, Method::PUT, &path)?
             .header("swarm-postage-batch-id", batch_id.to_hex());

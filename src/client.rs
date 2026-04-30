@@ -99,7 +99,8 @@ impl Client {
         if !owned.ends_with('/') {
             owned.push('/');
         }
-        let base_url = Url::parse(&owned).map_err(|e| Error::argument(format!("invalid url: {e}")))?;
+        let base_url =
+            Url::parse(&owned).map_err(|e| Error::argument(format!("invalid url: {e}")))?;
         let http = reqwest::Client::builder()
             .build()
             .map_err(Error::Transport)?;
@@ -116,7 +117,8 @@ impl Client {
         if !owned.ends_with('/') {
             owned.push('/');
         }
-        let base_url = Url::parse(&owned).map_err(|e| Error::argument(format!("invalid url: {e}")))?;
+        let base_url =
+            Url::parse(&owned).map_err(|e| Error::argument(format!("invalid url: {e}")))?;
         Ok(Self {
             inner: Arc::new(Inner { base_url, http }),
         })

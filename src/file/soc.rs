@@ -7,9 +7,8 @@ use serde::Deserialize;
 use crate::api::{UploadOptions, UploadResult, prepare_upload_headers};
 use crate::client::{Inner, request};
 use crate::swarm::{
-    BatchId, Error, EthAddress, Identifier, PrivateKey, Reference, Signature,
-    SingleOwnerChunk, calculate_single_owner_chunk_address, make_single_owner_chunk,
-    unmarshal_single_owner_chunk,
+    BatchId, Error, EthAddress, Identifier, PrivateKey, Reference, Signature, SingleOwnerChunk,
+    calculate_single_owner_chunk_address, make_single_owner_chunk, unmarshal_single_owner_chunk,
 };
 
 use super::FileApi;

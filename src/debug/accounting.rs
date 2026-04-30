@@ -42,7 +42,9 @@ where
     if s.is_empty() {
         return Ok(None);
     }
-    s.parse::<BigInt>().map(Some).map_err(serde::de::Error::custom)
+    s.parse::<BigInt>()
+        .map(Some)
+        .map_err(serde::de::Error::custom)
 }
 
 /// Full per-peer accounting state (richer than [`Balance`]). All

@@ -74,9 +74,7 @@ impl FileApi {
             None if !content_type.is_empty() => content_type.to_string(),
             None => "application/octet-stream".to_string(),
         };
-        let builder = builder
-            .header("Content-Type", ct)
-            .body(data.into());
+        let builder = builder.header("Content-Type", ct).body(data.into());
         let builder = Inner::apply_headers(builder, prepare_file_upload_headers(batch_id, opts));
         let resp = self.inner.send(builder).await?;
         let headers = resp.headers().clone();
@@ -119,7 +117,11 @@ impl FileApi {
         path: &str,
         opts: Option<&DownloadOptions>,
     ) -> Result<(Bytes, FileHeaders), Error> {
-        let p = format!("bzz/{}/{}", reference.to_hex(), path.trim_start_matches('/'));
+        let p = format!(
+            "bzz/{}/{}",
+            reference.to_hex(),
+            path.trim_start_matches('/')
+        );
         let builder = request(&self.inner, Method::GET, &p)?;
         let builder = Inner::apply_headers(builder, prepare_download_headers(opts));
         let resp = self.inner.send(builder).await?;
@@ -161,7 +163,8 @@ impl FileApi {
         opts: Option<&CollectionUploadOptions>,
     ) -> Result<UploadResult, Error> {
         let entries = read_directory_entries(dir.as_ref())?;
-        self.upload_collection_entries(batch_id, &entries, opts).await
+        self.upload_collection_entries(batch_id, &entries, opts)
+            .await
     }
 }
 
@@ -206,8 +209,8 @@ pub fn read_directory_entries(dir: &Path) -> Result<Vec<CollectionEntry>, Error>
 }
 
 fn walk(root: &Path, here: &Path, out: &mut Vec<CollectionEntry>) -> Result<(), Error> {
-    let read = std::fs::read_dir(here)
-        .map_err(|e| Error::argument(format!("read_dir {here:?}: {e}")))?;
+    let read =
+        std::fs::read_dir(here).map_err(|e| Error::argument(format!("read_dir {here:?}: {e}")))?;
     for entry in read {
         let entry = entry.map_err(|e| Error::argument(format!("dir entry: {e}")))?;
         let path: PathBuf = entry.path();
@@ -241,16 +244,15 @@ fn walk(root: &Path, here: &Path, out: &mut Vec<CollectionEntry>) -> Result<(), 
 /// written with mode `0o644`. Layout matches bee-go's
 /// `UploadCollectionEntries`.
 fn build_tar_archive(entries: &[CollectionEntry]) -> Result<Vec<u8>, Error> {
-    let mut buf = Vec::with_capacity(
-        entries.iter().map(|e| e.data.len() + 512).sum::<usize>() + 1024,
-    );
+    let mut buf =
+        Vec::with_capacity(entries.iter().map(|e| e.data.len() + 512).sum::<usize>() + 1024);
     {
         let mut tw = tar::Builder::new(&mut buf);
         for e in entries {
             let mut header = tar::Header::new_ustar();
-            header.set_path(&e.path).map_err(|err| {
-                Error::argument(format!("invalid tar path {:?}: {err}", e.path))
-            })?;
+            header
+                .set_path(&e.path)
+                .map_err(|err| Error::argument(format!("invalid tar path {:?}: {err}", e.path)))?;
             header.set_size(e.data.len() as u64);
             header.set_mode(0o644);
             header.set_cksum();

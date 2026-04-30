@@ -77,9 +77,9 @@ impl From<Reference> for ResourceLocator {
 /// matches the path or when the matched node has no target.
 pub fn resolve_path(manifest: &MantarayNode, path: &str) -> Result<Reference, Error> {
     let trimmed = path.trim_start_matches('/');
-    let node = manifest.find(trimmed.as_bytes()).ok_or_else(|| {
-        Error::argument(format!("no manifest entry for path {path:?}"))
-    })?;
+    let node = manifest
+        .find(trimmed.as_bytes())
+        .ok_or_else(|| Error::argument(format!("no manifest entry for path {path:?}")))?;
     target_reference(node)
         .ok_or_else(|| Error::argument(format!("manifest entry for {path:?} has no target")))
 }

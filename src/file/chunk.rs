@@ -6,8 +6,7 @@ use reqwest::Method;
 use serde::Deserialize;
 
 use crate::api::{
-    DownloadOptions, UploadOptions, UploadResult, prepare_download_headers,
-    prepare_upload_headers,
+    DownloadOptions, UploadOptions, UploadResult, prepare_download_headers, prepare_upload_headers,
 };
 use crate::client::{Inner, request};
 use crate::swarm::{BatchId, Error, Reference};

@@ -92,9 +92,8 @@ impl PrivateKey {
     pub fn sign(&self, data: &[u8]) -> Result<Signature, Error> {
         let digest = eth_signed_message_digest(data);
         let sk = self.signing_key()?;
-        let (sig, recovery_id): (K256Signature, RecoveryId) = sk
-            .sign_prehash(&digest)
-            .map_err(Error::crypto)?;
+        let (sig, recovery_id): (K256Signature, RecoveryId) =
+            sk.sign_prehash(&digest).map_err(Error::crypto)?;
         let normalized = sig.normalize_s().unwrap_or(sig);
         // k256 returns the recovery id corresponding to the original sig;
         // when normalize_s flips s, the recovery id also flips parity.
@@ -242,8 +241,7 @@ impl Signature {
         let recovery_byte = if v >= 27 { v - 27 } else { v };
         let recovery_id =
             RecoveryId::from_byte(recovery_byte).ok_or_else(|| Error::crypto("invalid V byte"))?;
-        let sig =
-            K256Signature::from_slice(&bytes[..64]).map_err(Error::crypto)?;
+        let sig = K256Signature::from_slice(&bytes[..64]).map_err(Error::crypto)?;
         let vk = VerifyingKey::recover_from_prehash(&digest, &sig, recovery_id)
             .map_err(Error::crypto)?;
         let point = vk.to_encoded_point(false);

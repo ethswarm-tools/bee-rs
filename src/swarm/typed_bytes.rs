@@ -484,10 +484,7 @@ mod tests {
             assert_eq!(s.to_u64(), n);
         }
         // 1 → 01 00 00 00 00 00 00 00
-        assert_eq!(
-            Span::from_u64(1).as_bytes(),
-            &[1, 0, 0, 0, 0, 0, 0, 0]
-        );
+        assert_eq!(Span::from_u64(1).as_bytes(), &[1, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
@@ -496,10 +493,7 @@ mod tests {
             assert_eq!(FeedIndex::from_u64(n).to_u64(), n);
         }
         // 1 → 00 00 00 00 00 00 00 01
-        assert_eq!(
-            FeedIndex::from_u64(1).as_bytes(),
-            &[0, 0, 0, 0, 0, 0, 0, 1]
-        );
+        assert_eq!(FeedIndex::from_u64(1).as_bytes(), &[0, 0, 0, 0, 0, 0, 0, 1]);
         assert_eq!(FeedIndex::from_u64(5).next().to_u64(), 6);
         assert_eq!(FeedIndex::MINUS_ONE.next().to_u64(), 0);
     }

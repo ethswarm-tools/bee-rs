@@ -108,9 +108,9 @@ pub async fn extend_storage_size(
 ) -> Result<(), Error> {
     let batch: PostageBatch = client.postage().get_postage_batch(batch_id).await?;
     let target_depth_i32 = crate::postage::get_depth_for_size(new_size.to_bytes());
-    let target: u8 = target_depth_i32
-        .try_into()
-        .map_err(|_| Error::argument(format!("computed depth {target_depth_i32} out of u8 range")))?;
+    let target: u8 = target_depth_i32.try_into().map_err(|_| {
+        Error::argument(format!("computed depth {target_depth_i32} out of u8 range"))
+    })?;
     if target <= batch.depth {
         return Ok(());
     }
@@ -147,9 +147,9 @@ pub async fn get_size_extension_cost(
 ) -> Result<BigInt, Error> {
     let batch = client.postage().get_postage_batch(batch_id).await?;
     let target_depth_i32 = crate::postage::get_depth_for_size(new_size.to_bytes());
-    let target: u8 = target_depth_i32
-        .try_into()
-        .map_err(|_| Error::argument(format!("computed depth {target_depth_i32} out of u8 range")))?;
+    let target: u8 = target_depth_i32.try_into().map_err(|_| {
+        Error::argument(format!("computed depth {target_depth_i32} out of u8 range"))
+    })?;
     if target <= batch.depth {
         return Ok(BigInt::from(0));
     }

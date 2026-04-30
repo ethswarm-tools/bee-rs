@@ -24,7 +24,10 @@ fn de_opt_bigint<'de, D: Deserializer<'de>>(d: D) -> Result<Option<BigInt>, D::E
     match s {
         None => Ok(None),
         Some(s) if s.is_empty() => Ok(None),
-        Some(s) => s.parse::<BigInt>().map(Some).map_err(serde::de::Error::custom),
+        Some(s) => s
+            .parse::<BigInt>()
+            .map(Some)
+            .map_err(serde::de::Error::custom),
     }
 }
 
@@ -170,8 +173,10 @@ impl DebugApi {
     /// `POST /wallet/withdraw/bzz?amount=&address=` — withdraw BZZ to
     /// an external address. Returns the on-chain transaction hash.
     pub async fn withdraw_bzz(&self, amount: &BigInt, address: &str) -> Result<String, Error> {
-        let builder = request(&self.inner, Method::POST, "wallet/withdraw/bzz")?
-            .query(&[("amount", amount.to_string()), ("address", address.to_string())]);
+        let builder = request(&self.inner, Method::POST, "wallet/withdraw/bzz")?.query(&[
+            ("amount", amount.to_string()),
+            ("address", address.to_string()),
+        ]);
         tx_hash(&self.inner, builder).await
     }
 
@@ -182,8 +187,10 @@ impl DebugApi {
         amount: &BigInt,
         address: &str,
     ) -> Result<String, Error> {
-        let builder = request(&self.inner, Method::POST, "wallet/withdraw/nativetoken")?
-            .query(&[("amount", amount.to_string()), ("address", address.to_string())]);
+        let builder = request(&self.inner, Method::POST, "wallet/withdraw/nativetoken")?.query(&[
+            ("amount", amount.to_string()),
+            ("address", address.to_string()),
+        ]);
         tx_hash(&self.inner, builder).await
     }
 
@@ -272,10 +279,7 @@ impl DebugApi {
     }
 }
 
-async fn tx_hash(
-    inner: &Inner,
-    builder: reqwest::RequestBuilder,
-) -> Result<String, Error> {
+async fn tx_hash(inner: &Inner, builder: reqwest::RequestBuilder) -> Result<String, Error> {
     #[derive(Deserialize)]
     struct Resp {
         #[serde(rename = "transactionHash")]

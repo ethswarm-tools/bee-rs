@@ -4,9 +4,7 @@
 //! header preparation, JSON parsing, error mapping. Each test stands
 //! up a fresh `MockServer` and points a `Client` at it.
 
-use bee::api::{
-    DownloadOptions, RedundancyLevel, RedundantUploadOptions, UploadOptions,
-};
+use bee::api::{DownloadOptions, RedundancyLevel, RedundantUploadOptions, UploadOptions};
 use bee::postage::{
     PostageBatch, get_depth_for_size, get_stamp_cost, get_stamp_effective_bytes,
     get_stamp_theoretical_bytes,
@@ -90,9 +88,7 @@ async fn upload_data_maps_4xx_to_response_error() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/bytes"))
-        .respond_with(
-            ResponseTemplate::new(422).set_body_string("invalid postage batch"),
-        )
+        .respond_with(ResponseTemplate::new(422).set_body_string("invalid postage batch"))
         .mount(&server)
         .await;
 
@@ -316,10 +312,7 @@ async fn top_up_and_dilute_send_patch() {
 #[test]
 fn stamp_math_known_values() {
     assert_eq!(get_stamp_theoretical_bytes(17), 536_870_912);
-    assert_eq!(
-        get_stamp_cost(3, &BigInt::from(100)),
-        BigInt::from(800)
-    );
+    assert_eq!(get_stamp_cost(3, &BigInt::from(100)), BigInt::from(800));
     assert_eq!(get_stamp_effective_bytes(17), 40_890);
     assert_eq!(get_depth_for_size(1_000_000), 18);
 }

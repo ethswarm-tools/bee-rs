@@ -151,9 +151,7 @@ pub fn unmarshal_single_owner_chunk(
     soc_input.extend_from_slice(owner.as_bytes());
     let computed = keccak256(&soc_input);
     if computed != expected_address.as_bytes() {
-        return Err(Error::argument(
-            "SOC data does not match expected address",
-        ));
+        return Err(Error::argument("SOC data does not match expected address"));
     }
 
     Ok(SingleOwnerChunk {

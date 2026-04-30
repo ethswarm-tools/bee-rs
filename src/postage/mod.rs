@@ -18,9 +18,7 @@ pub use stamp_math::{
     EFFECTIVE_SIZE_BREAKPOINTS, get_depth_for_size, get_stamp_cost, get_stamp_effective_bytes,
     get_stamp_theoretical_bytes, get_stamp_usage,
 };
-pub use types::{
-    BatchBucket, GlobalPostageBatch, PostageBatch, PostageBatchBuckets,
-};
+pub use types::{BatchBucket, GlobalPostageBatch, PostageBatch, PostageBatchBuckets};
 
 /// Handle exposing the postage endpoints. Cheap to clone.
 #[derive(Clone, Debug)]

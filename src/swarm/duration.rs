@@ -192,7 +192,9 @@ impl FromStr for Duration {
                 }
             }
             if num.is_empty() {
-                return Err(Error::argument(format!("unrecognized duration string: {s}")));
+                return Err(Error::argument(format!(
+                    "unrecognized duration string: {s}"
+                )));
             }
             let value: f64 = num
                 .parse()
@@ -214,7 +216,9 @@ impl FromStr for Duration {
             found = true;
         }
         if !found {
-            return Err(Error::argument(format!("unrecognized duration string: {s}")));
+            return Err(Error::argument(format!(
+                "unrecognized duration string: {s}"
+            )));
         }
         Ok(Self::new(total))
     }
@@ -230,7 +234,11 @@ fn unit_to_seconds(unit: &str) -> Result<f64, Error> {
         "w" | "week" | "weeks" => SECONDS_IN_WEEK as f64,
         "month" | "months" => SECONDS_IN_MONTH as f64,
         "y" | "year" | "years" => SECONDS_IN_YEAR as f64,
-        other => return Err(Error::argument(format!("unsupported duration unit: {other}"))),
+        other => {
+            return Err(Error::argument(format!(
+                "unsupported duration unit: {other}"
+            )));
+        }
     })
 }
 
@@ -299,9 +307,7 @@ mod tests {
     #[test]
     fn display_decomposes_into_units() {
         assert_eq!(Duration::ZERO.to_string(), "0s");
-        let d = Duration::from_seconds(
-            (SECONDS_IN_DAY + 4 * SECONDS_IN_HOUR + 5) as f64,
-        );
+        let d = Duration::from_seconds((SECONDS_IN_DAY + 4 * SECONDS_IN_HOUR + 5) as f64);
         assert_eq!(d.to_string(), "1d 4h 5s");
     }
 

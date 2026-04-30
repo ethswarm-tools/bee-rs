@@ -16,12 +16,10 @@
 use crate::swarm::errors::Error;
 use crate::swarm::file_chunker::FileChunker;
 
-use super::helpers::{
-    Reader, get_bit_le, has_type, pad_end_to_multiple, set_bit_le, xor_in_place,
-};
+use super::helpers::{Reader, get_bit_le, has_type, pad_end_to_multiple, set_bit_le, xor_in_place};
 use super::node::{
-    Fork, MantarayNode, NULL_ADDRESS, PATH_SEPARATOR, TYPE_WITH_METADATA, is_null_address,
-    MAX_PREFIX_LENGTH,
+    Fork, MAX_PREFIX_LENGTH, MantarayNode, NULL_ADDRESS, PATH_SEPARATOR, TYPE_WITH_METADATA,
+    is_null_address,
 };
 
 /// Hex string of the v0.2 version hash. Only the first 31 bytes are
@@ -99,9 +97,10 @@ pub fn marshal(node: &MantarayNode) -> Result<Vec<u8>, Error> {
 }
 
 fn marshal_fork(f: &Fork) -> Result<Vec<u8>, Error> {
-    let self_addr = f.node.self_address.ok_or_else(|| {
-        Error::argument("marshal_fork: child self_address not populated")
-    })?;
+    let self_addr = f
+        .node
+        .self_address
+        .ok_or_else(|| Error::argument("marshal_fork: child self_address not populated"))?;
     if f.prefix.len() > MAX_PREFIX_LENGTH {
         return Err(Error::argument(format!(
             "marshal_fork: prefix length {} exceeds max {}",
@@ -366,7 +365,12 @@ mod tests {
         let fork = parsed.forks.values().next().unwrap();
         assert_eq!(fork.node.metadata.as_ref().unwrap().len(), 2);
         assert_eq!(
-            fork.node.metadata.as_ref().unwrap().get("filename").unwrap(),
+            fork.node
+                .metadata
+                .as_ref()
+                .unwrap()
+                .get("filename")
+                .unwrap(),
             "hello.txt"
         );
     }

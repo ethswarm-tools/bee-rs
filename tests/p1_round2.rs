@@ -69,8 +69,7 @@ async fn soc_writer_signs_and_uploads_at_computed_address() {
         .and(path(format!("/soc/{}/{}", owner.to_hex(), id.to_hex())))
         .and(query_param_exists("sig"))
         .respond_with(
-            ResponseTemplate::new(201)
-                .set_body_json(json!({ "reference": expected_ref.clone() })),
+            ResponseTemplate::new(201).set_body_json(json!({ "reference": expected_ref.clone() })),
         )
         .mount(&server)
         .await;
@@ -126,7 +125,11 @@ async fn fetch_latest_feed_update_parses_indexes_from_headers() {
     let topic = Topic::from_string("feed");
 
     Mock::given(method("GET"))
-        .and(path(format!("/feeds/{}/{}", owner.to_hex(), topic.to_hex())))
+        .and(path(format!(
+            "/feeds/{}/{}",
+            owner.to_hex(),
+            topic.to_hex()
+        )))
         .respond_with(
             ResponseTemplate::new(200)
                 .insert_header("swarm-feed-index", "0000000000000003")
@@ -154,7 +157,11 @@ async fn find_next_index_returns_zero_on_404() {
     let topic = Topic::from_string("empty-feed");
 
     Mock::given(method("GET"))
-        .and(path(format!("/feeds/{}/{}", owner.to_hex(), topic.to_hex())))
+        .and(path(format!(
+            "/feeds/{}/{}",
+            owner.to_hex(),
+            topic.to_hex()
+        )))
         .respond_with(ResponseTemplate::new(404))
         .mount(&server)
         .await;
@@ -171,7 +178,11 @@ async fn is_feed_retrievable_returns_false_on_404() {
     let topic = Topic::from_string("missing");
 
     Mock::given(method("GET"))
-        .and(path(format!("/feeds/{}/{}", owner.to_hex(), topic.to_hex())))
+        .and(path(format!(
+            "/feeds/{}/{}",
+            owner.to_hex(),
+            topic.to_hex()
+        )))
         .respond_with(ResponseTemplate::new(404))
         .mount(&server)
         .await;
@@ -192,7 +203,11 @@ async fn create_feed_manifest_returns_reference() {
     let topic = Topic::from_string("create-feed");
 
     Mock::given(method("POST"))
-        .and(path(format!("/feeds/{}/{}", owner.to_hex(), topic.to_hex())))
+        .and(path(format!(
+            "/feeds/{}/{}",
+            owner.to_hex(),
+            topic.to_hex()
+        )))
         .and(header("Swarm-Postage-Batch-Id", "ab".repeat(32).as_str()))
         .respond_with(
             ResponseTemplate::new(201).set_body_json(json!({ "reference": "ee".repeat(32) })),
@@ -333,11 +348,7 @@ async fn list_tags_passes_offset_limit_query() {
         .await;
 
     let client = Client::new(&server.uri()).unwrap();
-    let tags = client
-        .api()
-        .list_tags(Some(10), Some(5))
-        .await
-        .unwrap();
+    let tags = client.api().list_tags(Some(10), Some(5)).await.unwrap();
     assert_eq!(tags.len(), 2);
     assert_eq!(tags[0].uid, 1);
 }

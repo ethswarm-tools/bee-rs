@@ -313,7 +313,10 @@ mod tests {
     #[test]
     fn upload_headers_omit_unset_fields() {
         let h = prepare_upload_headers(&batch(), None);
-        assert_eq!(header(&h, "Swarm-Postage-Batch-Id"), Some("ab".repeat(32).as_str()));
+        assert_eq!(
+            header(&h, "Swarm-Postage-Batch-Id"),
+            Some("ab".repeat(32).as_str())
+        );
         assert!(header(&h, "Swarm-Pin").is_none());
         assert!(header(&h, "Swarm-Encrypt").is_none());
     }
