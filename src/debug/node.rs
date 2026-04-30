@@ -41,10 +41,10 @@ pub struct BeeVersions {
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChainState {
-    /// Latest seen block number on the chain Bee tracks.
+    /// Latest block number Bee has settled to.
     pub block: u64,
-    /// Latest seen block hash.
-    pub chain_tip: String,
+    /// Highest block number Bee has observed (head of chain).
+    pub chain_tip: u64,
     /// Per-chunk price in PLUR/block.
     #[serde(default, deserialize_with = "deserialize_bigint_string")]
     pub current_price: BigInt,
@@ -65,9 +65,9 @@ where
 }
 
 /// Supported API version this client claims compatibility with.
-pub const SUPPORTED_API_VERSION: &str = "7.4.1";
+pub const SUPPORTED_API_VERSION: &str = "8.0.0";
 /// Supported exact Bee version this client targets.
-pub const SUPPORTED_BEE_VERSION_EXACT: &str = "2.7.1-61fab37b";
+pub const SUPPORTED_BEE_VERSION_EXACT: &str = "2.7.2-rc1-83612d37";
 
 /// `GET /node` response — operator-mode flags. Mirrors bee-go `NodeInfo`.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]

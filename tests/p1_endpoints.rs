@@ -342,13 +342,14 @@ async fn health_returns_versions() {
 
 #[tokio::test]
 async fn is_supported_api_version_compares_against_constant() {
+    use bee::debug::{SUPPORTED_API_VERSION, SUPPORTED_BEE_VERSION_EXACT};
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/health"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "status": "ok",
-            "version": "2.7.1-61fab37b",
-            "apiVersion": "7.4.1",
+            "version": SUPPORTED_BEE_VERSION_EXACT,
+            "apiVersion": SUPPORTED_API_VERSION,
         })))
         .mount(&server)
         .await;
@@ -367,7 +368,7 @@ async fn chain_state_decodes_bigint_strings() {
         .and(path("/chainstate"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "block": 12345,
-            "chainTip": "0xabc",
+            "chainTip": 12350,
             "currentPrice": "24000",
             "totalAmount": "999999999999999999999",
         })))

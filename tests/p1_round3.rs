@@ -515,7 +515,7 @@ async fn get_storage_cost_combines_chain_state_and_size() {
         .and(path("/chainstate"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "block": 1,
-            "chainTip": "0x00",
+            "chainTip": 1,
             "currentPrice": "10",
             "totalAmount": "0",
         })))
@@ -547,7 +547,7 @@ async fn buy_storage_creates_postage_batch_with_computed_amount() {
         .and(path("/chainstate"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "block": 1,
-            "chainTip": "0x00",
+            "chainTip": 1,
             "currentPrice": "10",
             "totalAmount": "0",
         })))

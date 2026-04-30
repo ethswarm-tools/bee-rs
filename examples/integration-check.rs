@@ -338,12 +338,20 @@ async fn main() -> ExitCode {
             .update_feed(&batch, &signer, &topic, b"feed-payload")
             .await
             .map_err(|e| e.to_string())?;
-        let _ = client
-            .file()
-            .fetch_latest_feed_update(owner.as_ref().expect("owner derived from signer"), &topic)
-            .await
-            .map_err(|e| e.to_string())?;
-        Ok(())
+        // Newly uploaded SOC chunks need a moment to be retrievable on
+        // a live network. Retry the lookup with backoff for up to 30s.
+        let owner = owner.as_ref().expect("owner derived from signer");
+        let mut last_err = None;
+        for delay_ms in [500u64, 1000, 2000, 4000, 8000, 14000] {
+            tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+            match client.file().fetch_latest_feed_update(owner, &topic).await {
+                Ok(_) => return Ok(()),
+                Err(e) => last_err = Some(e),
+            }
+        }
+        Err(last_err
+            .map(|e| format!("after retries: {e}"))
+            .unwrap_or_else(|| "no attempt made".to_string()))
     });
 
     section("PSS (HTTP send only)");

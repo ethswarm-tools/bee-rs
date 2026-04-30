@@ -380,7 +380,7 @@ async fn duration_extension_cost_combines_chain_state_and_batch() {
         .and(path("/chainstate"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "block": 1,
-            "chainTip": "0x0",
+            "chainTip": 1,
             "currentPrice": "10",
             "totalAmount": "0",
         })))

@@ -64,6 +64,25 @@ format follows [Keep a Changelog]; the project adheres to
   links so `cargo doc --no-deps` runs clean under
   `RUSTDOCFLAGS=-Dwarnings`.
 
+### Changed (P4 — live-Bee soak)
+- **`debug::ChainState.chain_tip`**: `String` → `u64`. Live Bee
+  returns this field as a JSON integer (head-of-chain block number),
+  not a hex hash string. Matches bee-go `ChainStateResponse.ChainTip`
+  and bee-js `ChainState.chainTip`.
+- **`debug::SUPPORTED_API_VERSION`**: `7.4.1` → `8.0.0`.
+- **`debug::SUPPORTED_BEE_VERSION_EXACT`**: `2.7.1-61fab37b` →
+  `2.7.2-rc1-83612d37` (matches the build the integration check is
+  green against).
+- **`examples/integration-check`** retries the post-update feed
+  lookup with backoff up to 30 s — newly uploaded SOC chunks need a
+  moment to be retrievable on a live network.
+
+### Notes (P4)
+- **24/24 pass against a live Bee 2.7.2-rc1 on Sepolia**: read-only
+  connectivity, postage batch lifecycle, bytes/file/collection
+  upload + download, pin/tag, feeds, PSS, GSOC. Reused an existing
+  batch via `BEE_BATCH_ID` (Sepolia first-usability is slow).
+
 ### Notes
 - bee-go's three live-Bee bug fixes are baked in from day one:
   the `amount` JSON tag, the `immutableFlag` JSON tag, and the
