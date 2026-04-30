@@ -1,0 +1,59 @@
+[package]
+name = "bee-rs"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+description = "Rust client for the Swarm Bee API. Functional parity with bee-js / bee-go."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ethswarm-tools/bee-rs"
+readme = "README.md"
+keywords = ["swarm", "bee", "ethereum", "decentralized-storage"]
+categories = ["api-bindings", "web-programming::http-client"]
+
+[lib]
+name = "bee"
+path = "src/lib.rs"
+
+[dependencies]
+# HTTP + async runtime
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream", "multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "io-util"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+futures-util = "0.3"
+bytes = "1"
+
+# Serde
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Crypto / encoding
+k256 = { version = "0.13", features = ["ecdsa", "sha256"] }
+sha3 = "0.10"            # keccak256
+hex = "0.4"
+base64 = "0.22"
+rand_core = { version = "0.6", features = ["std"] }
+
+# Error / logging
+thiserror = "2"
+tracing = "0.1"
+
+# Big number math (BZZ / DAI)
+num-bigint = { version = "0.4", features = ["serde"] }
+num-traits = "0.2"
+
+# URL handling
+url = "2"
+
+# Tar (collection uploads)
+tar = "0.4"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full", "test-util"] }
+wiremock = "0.6"
+hex-literal = "0.4"
+anyhow = "1"
+tempfile = "3"
+
+[features]
+default = []
+# Reserved for future opt-in subsystems (e.g. dev-mode helpers, wasm targets).
