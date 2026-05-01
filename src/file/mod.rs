@@ -8,6 +8,7 @@ mod chunk;
 mod data;
 mod feeds;
 mod soc;
+mod stream;
 
 pub use bzz::{
     CollectionEntry, collection_size, hash_collection_entries, hash_directory,
@@ -18,6 +19,7 @@ pub use feeds::{
     FeedReader, FeedUpdate, FeedWriter, feed_update_chunk_reference, make_feed_identifier,
 };
 pub use soc::{SocReader, SocWriter, soc_address};
+pub use stream::{OnStreamProgressFn, StreamProgress};
 
 use std::sync::Arc;
 

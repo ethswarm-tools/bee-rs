@@ -20,9 +20,12 @@ use std::env;
 use std::process::ExitCode;
 use std::time::Duration;
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use bee::Client;
 use bee::api::{FileUploadOptions, UploadOptions};
-use bee::file::CollectionEntry;
+use bee::file::{CollectionEntry, OnStreamProgressFn, StreamProgress};
 use bee::storage::get_storage_cost;
 use bee::swarm::{
     BatchId, Identifier, Network, PrivateKey, Reference, Size, Topic, make_content_addressed_chunk,
@@ -480,6 +483,41 @@ async fn main() -> ExitCode {
             .await
             .map_err(|e| e.to_string())?;
         println!("    reference={}", r.reference.to_hex());
+        Ok(())
+    });
+
+    section("stream_directory — chunk-by-chunk + recursive manifest");
+    check!(tally, "stream_collection_entries", async {
+        // A larger payload (12 KB) exercises both leaf and intermediate
+        // chunks, so we see >1 /chunks POST per file plus the recursive
+        // manifest /bytes write.
+        let big = vec![0xa5u8; 12 * 1024];
+        let stream_entries = vec![
+            CollectionEntry::new("index.html", b"<html>stream</html>".to_vec()),
+            CollectionEntry::new("data.bin", big),
+        ];
+        let progress = Arc::new(AtomicUsize::new(0));
+        let progress_clone = progress.clone();
+        let on_progress: OnStreamProgressFn = Arc::new(move |p: StreamProgress| {
+            // Track only the latest count; printing every chunk would
+            // flood the soak log.
+            progress_clone.store(p.processed, Ordering::SeqCst);
+            let _ = p.total;
+        });
+        let r = client
+            .file()
+            .stream_collection_entries(&batch, &stream_entries, None, Some(on_progress))
+            .await
+            .map_err(|e| e.to_string())?;
+        let processed = progress.load(Ordering::SeqCst);
+        if processed == 0 {
+            return Err("progress callback never fired".to_string());
+        }
+        println!(
+            "    reference={} chunks_uploaded={}",
+            r.reference.to_hex(),
+            processed
+        );
         Ok(())
     });
 

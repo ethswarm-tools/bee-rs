@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use bee::Client;
 use bee::api::CollectionUploadOptions;
+use bee::file::StreamProgress;
 use bee::postage::Stamper;
 use bee::swarm::{
     BatchId, CidType, EthAddress, PrivateKey, Reference, Topic, convert_cid_to_reference,
@@ -216,4 +217,73 @@ async fn upload_collection_invokes_progress_callback() {
     let mut got = names.lock().unwrap().clone();
     got.sort();
     assert_eq!(got, vec!["a.txt".to_string(), "b.txt".to_string()]);
+}
+
+// =====================================================================
+// stream_directory: per-chunk uploads + recursive manifest persist
+// =====================================================================
+
+#[tokio::test]
+async fn stream_directory_uploads_chunks_then_manifest() {
+    let server = MockServer::start().await;
+
+    // Per-chunk uploads to /chunks. Bee returns the address it
+    // computed; for this test we just echo a stable hex — the
+    // client doesn't re-verify the address against the body.
+    let chunks_seen = Arc::new(AtomicUsize::new(0));
+    let chunks_seen_clone = chunks_seen.clone();
+    Mock::given(method("POST"))
+        .and(path("/chunks"))
+        .and(header_exists("Swarm-Postage-Batch-Id"))
+        .respond_with(move |_: &wiremock::Request| {
+            chunks_seen_clone.fetch_add(1, Ordering::SeqCst);
+            ResponseTemplate::new(201).set_body_json(json!({ "reference": "cc".repeat(32) }))
+        })
+        .mount(&server)
+        .await;
+
+    // Manifest serialization goes through /bytes. There can be
+    // multiple if the manifest fans out; for two short files it's
+    // exactly one node.
+    let bytes_seen = Arc::new(AtomicUsize::new(0));
+    let bytes_seen_clone = bytes_seen.clone();
+    Mock::given(method("POST"))
+        .and(path("/bytes"))
+        .and(header_exists("Swarm-Postage-Batch-Id"))
+        .respond_with(move |_: &wiremock::Request| {
+            bytes_seen_clone.fetch_add(1, Ordering::SeqCst);
+            ResponseTemplate::new(201).set_body_json(json!({ "reference": "ee".repeat(32) }))
+        })
+        .mount(&server)
+        .await;
+
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("a.txt"), b"alpha").unwrap();
+    std::fs::write(dir.path().join("index.html"), b"<html/>").unwrap();
+
+    let last: Arc<std::sync::Mutex<Option<StreamProgress>>> = Arc::new(std::sync::Mutex::new(None));
+    let last_clone = last.clone();
+    let on_progress: bee::file::OnStreamProgressFn = Arc::new(move |p: StreamProgress| {
+        *last_clone.lock().unwrap() = Some(p);
+    });
+
+    let client = Client::new(&server.uri()).unwrap();
+    let result = client
+        .file()
+        .stream_directory(&batch(), dir.path(), None, Some(on_progress))
+        .await
+        .unwrap();
+
+    // Manifest reference flows back from the last /bytes response.
+    assert_eq!(result.reference.to_hex(), "ee".repeat(32));
+
+    // Two single-chunk files → 2 chunk uploads, no intermediates.
+    assert_eq!(chunks_seen.load(Ordering::SeqCst), 2);
+    // At least one manifest write (the root).
+    assert!(bytes_seen.load(Ordering::SeqCst) >= 1);
+
+    // Final progress callback should report processed == total == 2.
+    let last = last.lock().unwrap().expect("progress callback fired");
+    assert_eq!(last.total, 2);
+    assert_eq!(last.processed, 2);
 }

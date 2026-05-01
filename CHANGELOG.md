@@ -9,6 +9,8 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-01
+
 ### Added
 - **P0 foundations.** Typed bytes (`BatchId`, `Reference`, `Signature`,
   `Identifier`, `Topic`, `EthAddress`, `PublicKey`, `Span`, …),
@@ -60,6 +62,18 @@ format follows [Keep a Changelog]; the project adheres to
   - `api::CollectionUploadOptions::on_entry` — per-entry progress
     callback fired before the collection is packed and uploaded.
     Matches bee-js `streamDirectory` `onUploadProgress`.
+- **`FileApi::stream_directory` / `stream_collection_entries`** —
+  chunk-by-chunk directory upload. Each file is content-addressed
+  via `FileChunker`, chunks are uploaded via `POST /chunks` with up
+  to 64 concurrent in-flight requests, and the resulting Mantaray
+  manifest is persisted recursively via `FileApi::save_manifest_recursively`
+  (depth-first save children → marshal self → upload via `/bytes`).
+  Per-chunk `OnStreamProgressFn` callback reports `(processed, total)`
+  on every uploaded chunk. Mirrors bee-js `Bee.streamDirectory`
+  + `MantarayNode.saveRecursively`. Tar-based `upload_collection`
+  remains the right path when you need server-side `Content-Type`
+  inference; `stream_directory` trades that for incremental uploads
+  and live progress.
 - **Doc lints fixed.** Cleared two pre-existing broken intra-doc
   links so `cargo doc --no-deps` runs clean under
   `RUSTDOCFLAGS=-Dwarnings`.
