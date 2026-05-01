@@ -62,6 +62,28 @@ impl PostageApi {
 
     /// Buy a new postage batch — `POST /stamps/{amount}/{depth}`.
     /// Returns the freshly-minted [`BatchId`].
+    ///
+    /// `amount` is the per-chunk amount (PLUR) and `depth` is the
+    /// stamp depth — together they determine effective capacity and
+    /// TTL. For a `(size, duration)`-shaped API see
+    /// [`crate::storage::buy_storage`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use bee::Client;
+    /// use num_bigint::BigInt;
+    ///
+    /// # async fn run() -> Result<(), bee::Error> {
+    /// let client = Client::new("http://localhost:1633")?;
+    /// let amount = BigInt::from(414_720_000u64);
+    /// let batch_id = client
+    ///     .postage()
+    ///     .create_postage_batch(&amount, 22, Some("my-batch"))
+    ///     .await?;
+    /// println!("bought batch {}", batch_id.to_hex());
+    /// # Ok(()) }
+    /// ```
     pub async fn create_postage_batch(
         &self,
         amount: &BigInt,

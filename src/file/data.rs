@@ -31,6 +31,23 @@ impl FileApi {
     /// `application/octet-stream`. Returns an [`UploadResult`] with the
     /// content reference, optional tag UID, and (when ACT was
     /// requested) the history address.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use bee::Client;
+    /// use bee::swarm::BatchId;
+    /// use bytes::Bytes;
+    ///
+    /// # async fn run(batch_id: BatchId) -> Result<(), bee::Error> {
+    /// let client = Client::new("http://localhost:1633")?;
+    /// let result = client
+    ///     .file()
+    ///     .upload_data(&batch_id, Bytes::from_static(b"Hello Swarm!"), None)
+    ///     .await?;
+    /// println!("reference: {}", result.reference.to_hex());
+    /// # Ok(()) }
+    /// ```
     pub async fn upload_data(
         &self,
         batch_id: &BatchId,
@@ -51,6 +68,19 @@ impl FileApi {
     /// Download raw bytes via `GET /bytes/{ref}`. Returns the full body
     /// in memory. For streaming downloads use
     /// [`FileApi::download_data_response`](Self::download_data_response).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use bee::Client;
+    /// use bee::swarm::Reference;
+    ///
+    /// # async fn run(reference: Reference) -> Result<(), bee::Error> {
+    /// let client = Client::new("http://localhost:1633")?;
+    /// let body = client.file().download_data(&reference, None).await?;
+    /// println!("downloaded {} bytes", body.len());
+    /// # Ok(()) }
+    /// ```
     pub async fn download_data(
         &self,
         reference: &Reference,

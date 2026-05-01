@@ -2,6 +2,30 @@
 //! downloads. Mirrors `pkg/file` in bee-go.
 //!
 //! Get a [`FileApi`] from [`crate::Client::file`].
+//!
+//! # Streaming vs. buffered transfers
+//!
+//! [`FileApi::download_data`] / [`FileApi::download_file`] buffer the
+//! full body into [`bytes::Bytes`] before returning — fine for ≤ a few
+//! hundred MB but will OOM on multi-GB references. For larger
+//! downloads, use [`FileApi::download_data_response`] (or
+//! `download_file_response`) which returns the raw [`reqwest::Response`]
+//! so you can drive [`reqwest::Response::bytes_stream`] yourself.
+//!
+//! Uploads accept `impl Into<Bytes>` and stream the body to Bee. The
+//! chunk-by-chunk variants ([`FileApi::stream_directory`] and
+//! [`FileApi::stream_collection_entries`]) bound peak memory at the
+//! BMT chunk size regardless of file size and report progress via a
+//! caller-supplied [`OnStreamProgressFn`].
+//!
+//! # Cancellation
+//!
+//! Dropping the future returned by any upload / download cancels the
+//! in-flight HTTP request. For [`FileApi::stream_directory`] and
+//! [`FileApi::stream_collection_entries`], chunks already accepted by
+//! the local Bee node remain in the local reserve but the manifest is
+//! not finalized — the resulting orphan chunks are eventually pruned
+//! but cost reserve space until then.
 
 mod bzz;
 mod chunk;

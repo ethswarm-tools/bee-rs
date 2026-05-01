@@ -9,6 +9,49 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- **Crate-level docs.rs landing page.** Expanded the `//!` block in
+  `src/lib.rs` with a Quick Start section (runnable `no_run`
+  doctest covering connect → health → buy_storage → upload →
+  download), a module map, and an error-handling example. The page
+  previously opened with three lines of mirrors-to-other-clients;
+  it now opens with a complete onboarding read.
+- **`# Examples` doctests on key methods.** Added runnable `no_run`
+  examples to `FileApi::upload_data`, `FileApi::download_data`, and
+  `PostageApi::create_postage_batch`. Doctests are exercised by
+  `cargo test --doc`, so they cannot drift out of sync with the
+  surface they document.
+- **`examples/quickstart.rs`.** Minimal end-to-end example (connect,
+  health, buy or reuse a batch via `BEE_BATCH_ID`, upload + download
+  round-trip). Complements `examples/integration-check` (the full
+  soak) with a fast onboarding path.
+- **Operational sections in `lib.rs` `//!` block.** Bee version
+  compatibility (pinned to 2.7.2-rc1 / API 8.0.0), authentication +
+  timeouts + proxies (with `Client::with_http_client` snippet using
+  `default_headers` for bearer tokens), concurrency notes (`Send +
+  Sync + Clone`, `Arc`-cheap cloning), cancellation semantics,
+  streaming vs. buffered transfers (call out `download_data` buffers
+  fully and point at `download_data_response` for streaming),
+  observability (`tracing` is a dep but no spans emitted today),
+  Cargo features (none today; rustls-only), MSRV (1.85), testing
+  (with `wiremock` example), common pitfalls (batch usability, dilute
+  one-way, encrypted-vs-plain references, feed signer pairing,
+  dev-mode 404s), and an errors-and-retryability paragraph.
+- **Postage usability + dilute-one-way notes** in
+  `src/postage/mod.rs`: ~2-3 minute Sepolia confirmation delay before
+  `PostageBatch::usable` flips, and `dilute_batch` one-way semantics.
+- **File streaming + cancellation notes** in `src/file/mod.rs`: call
+  out that `download_data` / `download_file` buffer the full body and
+  point at the `_response` variants for streaming; document
+  `stream_directory` / `stream_collection_entries` orphan-chunk
+  behavior on future drop.
+- **Dev-mode 404 list** in `src/dev.rs`: explicit list of every
+  endpoint that returns 404 against `bee dev` (chequebook,
+  settlements, stake, pending transactions, chain-state reads,
+  accounting, balances, RC hash, and the high-level
+  `crate::storage::*` helpers that internally call them).
+
 ## [1.0.1] - 2026-05-01
 
 ### Fixed
