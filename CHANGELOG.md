@@ -9,6 +9,14 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-01
+
+### Fixed
+- `Cargo.toml` `keywords`: replaced `"decentralized-storage"` (21
+  chars) with `"storage"` so the package metadata satisfies
+  crates.io's 20-char keyword cap. Metadata-only — no code changes
+  vs. v1.0.0.
+
 ## [1.0.0] - 2026-05-01
 
 ### Added

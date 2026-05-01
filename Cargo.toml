@@ -1,13 +1,13 @@
 [package]
 name = "bee-rs"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 rust-version = "1.85"
 description = "Rust client for the Swarm Bee API. Functional parity with bee-js / bee-go."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ethswarm-tools/bee-rs"
 readme = "README.md"
-keywords = ["swarm", "bee", "ethereum", "decentralized-storage"]
+keywords = ["swarm", "bee", "ethereum", "storage"]
 categories = ["api-bindings", "web-programming::http-client"]
 
 [lib]
