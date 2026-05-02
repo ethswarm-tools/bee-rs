@@ -35,9 +35,15 @@ async fn run() -> Result<(), Error> {
     println!("===========");
     println!("Settled block:    {}", s.block);
     println!("Chain tip:        {}", s.chain_tip);
-    println!("Lag:              {} block(s)", s.chain_tip.saturating_sub(s.block));
+    println!(
+        "Lag:              {} block(s)",
+        s.chain_tip.saturating_sub(s.block)
+    );
     println!("Current price:    {} PLUR/chunk/block", s.current_price);
     println!("Total amount:     {} PLUR", s.total_amount);
-    println!("                  {} BZZ", total_amount_bzz.to_decimal_string());
+    println!(
+        "                  {} BZZ",
+        total_amount_bzz.to_decimal_string()
+    );
     Ok(())
 }

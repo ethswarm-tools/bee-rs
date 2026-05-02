@@ -16,7 +16,7 @@
 use std::process::ExitCode;
 
 use bee::postage::{get_depth_for_size, get_stamp_cost};
-use bee::swarm::{Bzz, BeeDuration, Error, Network, Size};
+use bee::swarm::{BeeDuration, Bzz, Error, Network, Size};
 use num_bigint::BigInt;
 
 fn main() -> ExitCode {
@@ -44,7 +44,11 @@ fn run() -> Result<(), Error> {
     let network = match net_str.to_ascii_lowercase().as_str() {
         "gnosis" => Network::Gnosis,
         "mainnet" => Network::Mainnet,
-        other => return Err(Error::argument(format!("unknown network {other:?} — use gnosis or mainnet"))),
+        other => {
+            return Err(Error::argument(format!(
+                "unknown network {other:?} — use gnosis or mainnet"
+            )));
+        }
     };
 
     let depth = get_depth_for_size(size.to_bytes());
@@ -55,17 +59,33 @@ fn run() -> Result<(), Error> {
 
     println!("Stamp cost preview");
     println!("==================");
-    println!("Size:                  {size_str} ({} bytes)", size.to_bytes());
-    println!("Duration:              {dur_str} ({} seconds, ~{:.2} days)", duration.to_seconds(), duration.to_days());
-    println!("Network:               {net_str} ({}s blocks)", network.block_time_seconds());
+    println!(
+        "Size:                  {size_str} ({} bytes)",
+        size.to_bytes()
+    );
+    println!(
+        "Duration:              {dur_str} ({} seconds, ~{:.2} days)",
+        duration.to_seconds(),
+        duration.to_days()
+    );
+    println!(
+        "Network:               {net_str} ({}s blocks)",
+        network.block_time_seconds()
+    );
     println!("Price per chunk/block: {price_per_block} PLUR");
     println!();
     println!("Stamp depth:           {depth}");
-    println!("Chunks covered:        2^{depth} = {}", BigInt::from(2u32).pow(depth as u32));
+    println!(
+        "Chunks covered:        2^{depth} = {}",
+        BigInt::from(2u32).pow(depth as u32)
+    );
     println!("Blocks for duration:   {blocks}");
     println!("Per-chunk amount:      {amount_per_chunk} PLUR");
     println!("Total cost:            {total_plur} PLUR");
-    println!("                       {} BZZ", total_bzz.to_decimal_string());
+    println!(
+        "                       {} BZZ",
+        total_bzz.to_decimal_string()
+    );
 
     Ok(())
 }

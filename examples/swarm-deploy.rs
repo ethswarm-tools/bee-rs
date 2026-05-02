@@ -170,7 +170,10 @@ fn cmd_history() -> Result<(), Error> {
     println!("feed manifest: {}", state.feed_manifest_ref);
     println!("\n#  {:<10}  {:<64}  note", "ts", "site_ref");
     for (i, e) in state.history.iter().enumerate() {
-        println!("{:<2} {:<10}  {:<64}  {}", i, e.timestamp, e.site_ref, e.note);
+        println!(
+            "{:<2} {:<10}  {:<64}  {}",
+            i, e.timestamp, e.site_ref, e.note
+        );
     }
     Ok(())
 }
@@ -210,7 +213,8 @@ fn env_batch() -> Result<BatchId, Error> {
 }
 
 fn env_signer() -> Result<PrivateKey, Error> {
-    let h = env::var("BEE_SIGNER_HEX").map_err(|_| Error::argument("BEE_SIGNER_HEX is required"))?;
+    let h =
+        env::var("BEE_SIGNER_HEX").map_err(|_| Error::argument("BEE_SIGNER_HEX is required"))?;
     PrivateKey::from_hex(&h)
 }
 

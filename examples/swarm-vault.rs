@@ -177,7 +177,10 @@ async fn cmd_put(client: &Client, name: &str, local: &str) -> Result<(), Error> 
         },
     );
     publish_index(client, &mut st, &batch_id, &signer, &topic).await?;
-    println!("  vault entry: {name}\n  encrypted_ref: {}", upload.reference.to_hex());
+    println!(
+        "  vault entry: {name}\n  encrypted_ref: {}",
+        upload.reference.to_hex()
+    );
     Ok(())
 }
 
@@ -201,7 +204,7 @@ fn cmd_list() -> Result<(), Error> {
         return Ok(());
     }
     println!("vault {:?}  feed: {}", st.name, st.feed_manifest_ref);
-    println!("\n{:<24}  {:>10}  {}", "name", "size", "encrypted_ref");
+    println!("\n{:<24}  {:>10}  encrypted_ref", "name", "size");
     for (name, e) in &st.index {
         println!("{name:<24}  {:>10}  {}", e.size, e.encrypted_ref);
     }
@@ -248,7 +251,8 @@ fn env_batch() -> Result<BatchId, Error> {
 }
 
 fn env_signer() -> Result<PrivateKey, Error> {
-    let h = env::var("BEE_SIGNER_HEX").map_err(|_| Error::argument("BEE_SIGNER_HEX is required"))?;
+    let h =
+        env::var("BEE_SIGNER_HEX").map_err(|_| Error::argument("BEE_SIGNER_HEX is required"))?;
     PrivateKey::from_hex(&h)
 }
 

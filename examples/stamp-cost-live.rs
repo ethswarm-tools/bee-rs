@@ -57,15 +57,27 @@ async fn run() -> Result<(), Error> {
     println!("Live stamp cost preview");
     println!("=======================");
     println!("Bee URL:              {url}");
-    println!("Size:                 {size_str} ({} bytes)", size.to_bytes());
+    println!(
+        "Size:                 {size_str} ({} bytes)",
+        size.to_bytes()
+    );
     println!("Duration:             {dur_str}");
-    println!("Network:              {net_str} ({}s blocks)", network.block_time_seconds());
+    println!(
+        "Network:              {net_str} ({}s blocks)",
+        network.block_time_seconds()
+    );
     println!();
-    println!("Live chain price:     {} PLUR/chunk/block", chain.current_price);
+    println!(
+        "Live chain price:     {} PLUR/chunk/block",
+        chain.current_price
+    );
     println!("Stamp depth:          {}", cost.depth);
     println!("Blocks for duration:  {}", cost.blocks);
     println!("Per-chunk amount:     {} PLUR", cost.amount_per_chunk);
     println!("Total cost:           {} PLUR", cost.total_cost);
-    println!("                      {} BZZ", total_bzz.to_decimal_string());
+    println!(
+        "                      {} BZZ",
+        total_bzz.to_decimal_string()
+    );
     Ok(())
 }

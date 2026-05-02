@@ -39,8 +39,15 @@ async fn run() -> Result<(), Error> {
 
     // 1. Plain upload — for comparison. Plain references are 32 bytes (64 hex chars).
     let payload = Bytes::from_static(b"some sensitive payload");
-    let plain = client.file().upload_data(&batch_id, payload.clone(), None).await?;
-    println!("plain reference:     {} ({} bytes)", plain.reference.to_hex(), plain.reference.len());
+    let plain = client
+        .file()
+        .upload_data(&batch_id, payload.clone(), None)
+        .await?;
+    println!(
+        "plain reference:     {} ({} bytes)",
+        plain.reference.to_hex(),
+        plain.reference.len()
+    );
 
     // 2. Encrypted upload — Bee encrypts chunks and bakes the
     //    decryption key into the returned reference. Encrypted refs
@@ -53,7 +60,10 @@ async fn run() -> Result<(), Error> {
         },
         ..Default::default()
     };
-    let enc = client.file().upload_data(&batch_id, payload.clone(), Some(&opts)).await?;
+    let enc = client
+        .file()
+        .upload_data(&batch_id, payload.clone(), Some(&opts))
+        .await?;
     println!(
         "encrypted reference: {} ({} bytes, encrypted={})",
         enc.reference.to_hex(),

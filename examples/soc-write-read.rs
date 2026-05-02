@@ -49,8 +49,8 @@ async fn run() -> Result<(), Error> {
 
     let entries: [(&str, &[u8]); 3] = [
         ("greeting", b"hello, single-owner-chunk"),
-        ("number",   b"42"),
-        ("payload",  b"\x01\x02\x03 binary bytes"),
+        ("number", b"42"),
+        ("payload", b"\x01\x02\x03 binary bytes"),
     ];
 
     println!("\nWriting {} SOCs...", entries.len());
@@ -68,7 +68,7 @@ async fn run() -> Result<(), Error> {
     }
 
     println!("\nReading back via SOC reader...");
-    let reader = client.file().make_soc_reader(owner.clone());
+    let reader = client.file().make_soc_reader(owner);
     for (label, body) in &entries {
         let id = Identifier::from_string(label);
         let soc = reader.download(&id).await?;

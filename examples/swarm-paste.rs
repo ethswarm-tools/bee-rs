@@ -83,7 +83,13 @@ async fn run() -> Result<(), Error> {
     let client = Client::new(&url)?;
     let result = client
         .file()
-        .upload_file(&batch_id, Bytes::from(buf.clone()), &name, &content_type, Some(&opts))
+        .upload_file(
+            &batch_id,
+            Bytes::from(buf.clone()),
+            &name,
+            &content_type,
+            Some(&opts),
+        )
         .await?;
 
     let trimmed = url.trim_end_matches('/');

@@ -65,7 +65,10 @@ async fn run() -> Result<(), Error> {
 
     // 3. Poll the tag a few times so we can see the counters move.
     println!("\npolling tag every 2s for 10s:");
-    println!("  {:>5}  {:>6}  {:>6}  {:>6}  {:>6}", "split", "seen", "stored", "sent", "synced");
+    println!(
+        "  {:>5}  {:>6}  {:>6}  {:>6}  {:>6}",
+        "split", "seen", "stored", "sent", "synced"
+    );
     for _ in 0..5 {
         let t = client.api().get_tag(tag.uid).await?;
         println!(

@@ -48,7 +48,11 @@ async fn run() -> Result<(), Error> {
 
     let client = Client::new(&url)?;
 
-    println!("Creating feed manifest for (owner={}, topic={})...", owner.to_hex(), topic.to_hex());
+    println!(
+        "Creating feed manifest for (owner={}, topic={})...",
+        owner.to_hex(),
+        topic.to_hex()
+    );
     let feed_manifest = client
         .file()
         .create_feed_manifest(&batch_id, &owner, &topic)
@@ -61,7 +65,10 @@ async fn run() -> Result<(), Error> {
 
     // Publish v1.
     let v1 = Bytes::from_static(b"version 1: hello world");
-    let r1 = client.file().upload_data(&batch_id, v1.clone(), None).await?;
+    let r1 = client
+        .file()
+        .upload_data(&batch_id, v1.clone(), None)
+        .await?;
     let upd1 = client
         .file()
         .update_feed_with_reference(&batch_id, &signer, &topic, &r1.reference, None)
@@ -72,7 +79,10 @@ async fn run() -> Result<(), Error> {
     // Publish v2.
     sleep(Duration::from_secs(1)).await;
     let v2 = Bytes::from_static(b"version 2: hello swarm");
-    let r2 = client.file().upload_data(&batch_id, v2.clone(), None).await?;
+    let r2 = client
+        .file()
+        .upload_data(&batch_id, v2.clone(), None)
+        .await?;
     let upd2 = client
         .file()
         .update_feed_with_reference(&batch_id, &signer, &topic, &r2.reference, None)

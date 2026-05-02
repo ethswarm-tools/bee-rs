@@ -88,7 +88,10 @@ async fn run() -> Result<(), Error> {
         CollectionEntry::new("style.css", b"body { color: red }".to_vec()),
     ];
     let offline_root = hash_collection_entries(&entries)?;
-    println!("\nOffline hash for upload entries: {}", offline_root.to_hex());
+    println!(
+        "\nOffline hash for upload entries: {}",
+        offline_root.to_hex()
+    );
 
     let client = Client::new(&url)?;
     let result = client
@@ -97,7 +100,10 @@ async fn run() -> Result<(), Error> {
         .await?;
     let trimmed = url.trim_end_matches('/');
     println!("Uploaded   → {}", result.reference.to_hex());
-    println!("Browse at: {trimmed}/bzz/{}/assets/logo.png", result.reference.to_hex());
+    println!(
+        "Browse at: {trimmed}/bzz/{}/assets/logo.png",
+        result.reference.to_hex()
+    );
     Ok(())
 }
 

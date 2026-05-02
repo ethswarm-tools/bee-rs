@@ -45,10 +45,7 @@ async fn run() -> Result<(), Error> {
 
     // Look up the batch's depth so the stamper buckets match the
     // on-chain batch capacity.
-    let batch = client
-        .postage()
-        .get_postage_batch(&batch_id)
-        .await?;
+    let batch = client.postage().get_postage_batch(&batch_id).await?;
     println!("Batch:");
     println!("  id:    {}", batch.batch_id.to_hex());
     println!("  depth: {}", batch.depth);
@@ -78,7 +75,11 @@ async fn run() -> Result<(), Error> {
     //    restarts so the resumed stamper does not overspend a bucket.
     let snapshot: Vec<u32> = stamper.state().to_vec();
     let used: u32 = snapshot.iter().sum();
-    println!("Persisted state: {} buckets, {} stamps total.", snapshot.len(), used);
+    println!(
+        "Persisted state: {} buckets, {} stamps total.",
+        snapshot.len(),
+        used
+    );
 
     let mut resumed = Stamper::from_state(signer, batch_id, snapshot.clone(), batch.depth)?;
     let chunk = make_content_addressed_chunk(b"after resume")?;

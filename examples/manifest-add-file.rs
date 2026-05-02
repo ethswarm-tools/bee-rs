@@ -41,7 +41,11 @@ async fn run() -> Result<(), Error> {
         CollectionEntry::new("about.html", b"<h1>about</h1>".to_vec()),
     ];
     let root1 = hash_collection_entries(&entries)?;
-    println!("Initial manifest ({} entries) → {}", entries.len(), root1.to_hex());
+    println!(
+        "Initial manifest ({} entries) → {}",
+        entries.len(),
+        root1.to_hex()
+    );
 
     // 2. Add a new file.
     entries.push(CollectionEntry::new(
@@ -49,7 +53,11 @@ async fn run() -> Result<(), Error> {
         b"<h1>contact</h1>".to_vec(),
     ));
     let root2 = hash_collection_entries(&entries)?;
-    println!("With contact.html ({} entries) → {}", entries.len(), root2.to_hex());
+    println!(
+        "With contact.html ({} entries) → {}",
+        entries.len(),
+        root2.to_hex()
+    );
 
     if root1 == root2 {
         return Err(Error::argument(
@@ -83,7 +91,13 @@ async fn run() -> Result<(), Error> {
     }
 
     let trimmed = url.trim_end_matches('/');
-    println!("\nBrowse at: {trimmed}/bzz/{}/index.html", result.reference.to_hex());
-    println!("           {trimmed}/bzz/{}/contact.html", result.reference.to_hex());
+    println!(
+        "\nBrowse at: {trimmed}/bzz/{}/index.html",
+        result.reference.to_hex()
+    );
+    println!(
+        "           {trimmed}/bzz/{}/contact.html",
+        result.reference.to_hex()
+    );
     Ok(())
 }

@@ -61,9 +61,9 @@ async fn run() -> Result<(), Error> {
     let batch_id = env_batch()?;
 
     let mut args = env::args().skip(1);
-    let dir = args
-        .next()
-        .ok_or_else(|| Error::argument("usage: swarm-pinner <watch-dir> [--once] [--interval N]"))?;
+    let dir = args.next().ok_or_else(|| {
+        Error::argument("usage: swarm-pinner <watch-dir> [--once] [--interval N]")
+    })?;
     let mut once = false;
     let mut interval_secs: u64 = 5;
     while let Some(a) = args.next() {

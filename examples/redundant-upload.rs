@@ -57,7 +57,10 @@ async fn run() -> Result<(), Error> {
 
     let client = Client::new(&url)?;
 
-    let plain = client.file().upload_data(&batch_id, payload.clone(), None).await?;
+    let plain = client
+        .file()
+        .upload_data(&batch_id, payload.clone(), None)
+        .await?;
     println!("Plain upload (off):       {}", plain.reference.to_hex());
 
     let opts = RedundantUploadOptions {
@@ -68,7 +71,11 @@ async fn run() -> Result<(), Error> {
         .file()
         .upload_data(&batch_id, payload.clone(), Some(&opts))
         .await?;
-    println!("Redundant upload ({:>8}): {}", level_str, redundant.reference.to_hex());
+    println!(
+        "Redundant upload ({:>8}): {}",
+        level_str,
+        redundant.reference.to_hex()
+    );
 
     println!();
     println!(

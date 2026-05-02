@@ -42,7 +42,10 @@ fn run() -> Result<(), Error> {
     println!("Ethereum address:      {}", address.to_checksum());
     println!();
     println!("Usage hints:");
-    println!("- Set BEE_SIGNER_HEX={} to drive feed-update / pss / soc examples", signer.to_hex());
+    println!(
+        "- Set BEE_SIGNER_HEX={} to drive feed-update / pss / soc examples",
+        signer.to_hex()
+    );
     println!("- The address is what readers need to follow your feeds");
     Ok(())
 }

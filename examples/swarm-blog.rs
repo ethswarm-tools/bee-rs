@@ -116,7 +116,10 @@ fn cmd_new(slug: &str, title: &str) -> Result<(), Error> {
     let _ = load_state()?;
     let path = PathBuf::from(POSTS_DIR).join(format!("{slug}.md"));
     if path.exists() {
-        return Err(Error::argument(format!("{} already exists", path.display())));
+        return Err(Error::argument(format!(
+            "{} already exists",
+            path.display()
+        )));
     }
     let template = format!(
         "# {title}\n\nWrite your post here. Markdown is preserved\n\
@@ -236,7 +239,10 @@ fn index_html(title: &str, links: &str) -> String {
 }
 
 fn post_html(title: &str, body_md: &str) -> String {
-    let escaped = body_md.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+    let escaped = body_md
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
     format!(
         "<!doctype html>\n<html><head><meta charset=\"utf-8\">\n\
          <title>{title}</title></head><body>\n\
@@ -252,7 +258,8 @@ fn env_batch() -> Result<BatchId, Error> {
 }
 
 fn env_signer() -> Result<PrivateKey, Error> {
-    let h = env::var("BEE_SIGNER_HEX").map_err(|_| Error::argument("BEE_SIGNER_HEX is required"))?;
+    let h =
+        env::var("BEE_SIGNER_HEX").map_err(|_| Error::argument("BEE_SIGNER_HEX is required"))?;
     PrivateKey::from_hex(&h)
 }
 

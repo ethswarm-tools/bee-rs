@@ -123,7 +123,13 @@ async fn cmd_share(client: &Client, args: &[String]) -> Result<(), Error> {
     };
     let upload = client
         .file()
-        .upload_file(&batch_id, Bytes::from(body), &name, "application/octet-stream", Some(&opts))
+        .upload_file(
+            &batch_id,
+            Bytes::from(body),
+            &name,
+            "application/octet-stream",
+            Some(&opts),
+        )
         .await?;
     let history = upload
         .history_address

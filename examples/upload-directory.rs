@@ -48,7 +48,11 @@ async fn run() -> Result<(), Error> {
     let index = args.next().unwrap_or_else(|| "index.html".to_string());
 
     let opts = CollectionUploadOptions {
-        index_document: if index.is_empty() { None } else { Some(index.clone()) },
+        index_document: if index.is_empty() {
+            None
+        } else {
+            Some(index.clone())
+        },
         ..Default::default()
     }
     .with_on_entry(|p| {
@@ -61,7 +65,10 @@ async fn run() -> Result<(), Error> {
         );
     });
 
-    println!("Uploading directory {dir} using batch {}...", batch_id.to_hex());
+    println!(
+        "Uploading directory {dir} using batch {}...",
+        batch_id.to_hex()
+    );
     if !index.is_empty() {
         println!("Index document: {index}");
     }

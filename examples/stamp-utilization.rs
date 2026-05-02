@@ -33,7 +33,10 @@ async fn run() -> Result<(), Error> {
     let batch_id = BatchId::from_hex(&batch_hex)?;
 
     let client = Client::new(&url)?;
-    let buckets = client.postage().get_postage_batch_buckets(&batch_id).await?;
+    let buckets = client
+        .postage()
+        .get_postage_batch_buckets(&batch_id)
+        .await?;
 
     let total_buckets = buckets.buckets.len();
     let mut max_fill = 0u32;

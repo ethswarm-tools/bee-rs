@@ -75,9 +75,9 @@ async fn run() -> Result<(), Error> {
         b"third and last".to_vec(),
     ];
     let send_client = client.clone();
-    let send_batch = batch_id.clone();
+    let send_batch = batch_id;
     let send_signer = signer.clone();
-    let send_id = identifier.clone();
+    let send_id = identifier;
     let send_messages = messages.clone();
     let sender = tokio::spawn(async move {
         // Tiny stagger so the receiver is definitely subscribed.
@@ -101,10 +101,9 @@ async fn run() -> Result<(), Error> {
 
     // 5. Receive.
     println!("Listening for {} messages...", messages.len());
-    for i in 0..messages.len() {
+    for (i, expected) in messages.iter().enumerate() {
         match timeout(Duration::from_secs(15), sub.recv()).await {
             Ok(Some(msg)) => {
-                let expected = &messages[i];
                 let ok = msg.as_ref() == expected.as_slice();
                 match std::str::from_utf8(&msg) {
                     Ok(s) => println!("  <- recv #{i}: {s:?} (ok={ok})"),
@@ -123,8 +122,13 @@ async fn run() -> Result<(), Error> {
         }
     }
 
-    sender.await.map_err(|e| Error::argument(format!("sender task: {e}")))??;
+    sender
+        .await
+        .map_err(|e| Error::argument(format!("sender task: {e}")))??;
     sub.cancel();
-    println!("\nGSOC round-trip OK: {} messages received.", messages.len());
+    println!(
+        "\nGSOC round-trip OK: {} messages received.",
+        messages.len()
+    );
     Ok(())
 }

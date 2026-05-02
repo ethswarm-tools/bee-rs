@@ -75,9 +75,7 @@ async fn run() -> Result<(), Error> {
         }
         "send" => {
             let topic_str = args.next().ok_or_else(|| {
-                Error::argument(
-                    "usage: pss-send-receive send <topic> <target-prefix> <message>",
-                )
+                Error::argument("usage: pss-send-receive send <topic> <target-prefix> <message>")
             })?;
             let target = args
                 .next()

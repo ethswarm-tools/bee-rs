@@ -87,10 +87,7 @@ async fn run() -> Result<(), Error> {
 
     // 4. Create an initial grantee list with three keys.
     let grantees = vec![g1.clone(), g2.clone(), g3.clone()];
-    let created = client
-        .api()
-        .create_grantees(&batch_id, &grantees)
-        .await?;
+    let created = client.api().create_grantees(&batch_id, &grantees).await?;
     let created_ref = Reference::from_hex(&created.reference)?;
     println!("Created grantee list:");
     println!("  ref:       {}", created.reference);

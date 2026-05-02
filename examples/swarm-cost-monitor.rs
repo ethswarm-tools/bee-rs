@@ -150,7 +150,10 @@ async fn refill(client: &Client, days: f64) -> Result<(), Error> {
         );
     }
     let total_bzz = Bzz::from_base_units(total);
-    println!("\nTotal projected refill: {} BZZ", total_bzz.to_significant_digits(4));
+    println!(
+        "\nTotal projected refill: {} BZZ",
+        total_bzz.to_significant_digits(4)
+    );
     Ok(())
 }
 

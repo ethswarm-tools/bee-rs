@@ -59,13 +59,17 @@ async fn run() -> Result<(), Error> {
         match a.as_str() {
             "--user" => user = args.next().ok_or_else(|| Error::argument("--user value"))?,
             "--topic" => {
-                topic_name = args.next().ok_or_else(|| Error::argument("--topic value"))?
+                topic_name = args
+                    .next()
+                    .ok_or_else(|| Error::argument("--topic value"))?
             }
-            "--target" => target = args.next().ok_or_else(|| Error::argument("--target value"))?,
+            "--target" => {
+                target = args
+                    .next()
+                    .ok_or_else(|| Error::argument("--target value"))?
+            }
             "-h" | "--help" => {
-                println!(
-                    "swarm-chat [--user <name>] [--topic <name>] [--target <hex-prefix>]"
-                );
+                println!("swarm-chat [--user <name>] [--topic <name>] [--target <hex-prefix>]");
                 return Ok(());
             }
             other => return Err(Error::argument(format!("unknown flag: {other}"))),
@@ -81,7 +85,7 @@ async fn run() -> Result<(), Error> {
 
     // Receive loop.
     let recv_client = client.clone();
-    let recv_topic = topic.clone();
+    let recv_topic = topic;
     let recv_user = user.clone();
     tokio::spawn(async move {
         let mut sub = match recv_client.pss().subscribe(&recv_topic).await {

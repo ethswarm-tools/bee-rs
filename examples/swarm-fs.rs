@@ -54,9 +54,9 @@ async fn main() -> ExitCode {
 
 async fn run() -> Result<(), Error> {
     let mut args = env::args().skip(1);
-    let cmd = args.next().ok_or_else(|| {
-        Error::argument("usage: swarm-fs <init|add|mv|rm|ls|publish> ...")
-    })?;
+    let cmd = args
+        .next()
+        .ok_or_else(|| Error::argument("usage: swarm-fs <init|add|mv|rm|ls|publish> ..."))?;
     match cmd.as_str() {
         "init" => cmd_init(),
         "add" => {
@@ -142,7 +142,7 @@ fn cmd_ls() -> Result<(), Error> {
         println!("(empty)");
         return Ok(());
     }
-    println!("{:<40}  {}", "path", "local-file");
+    println!("{:<40}  local-file", "path");
     for (p, l) in &tree.entries {
         println!("{p:<40}  {l}");
     }
@@ -174,7 +174,10 @@ async fn cmd_publish(extra: Vec<String>) -> Result<(), Error> {
     let mut entries: Vec<CollectionEntry> = vec![];
     for (path, local) in &tree.entries {
         let data = fs::read(local).map_err(|e| Error::argument(format!("read {local}: {e}")))?;
-        entries.push(CollectionEntry { path: path.clone(), data });
+        entries.push(CollectionEntry {
+            path: path.clone(),
+            data,
+        });
     }
 
     let opts = CollectionUploadOptions {

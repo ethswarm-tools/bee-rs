@@ -22,8 +22,8 @@ use std::process::ExitCode;
 
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Nonce};
-use bee::swarm::PrivateKey;
 use bee::Error;
+use bee::swarm::PrivateKey;
 use rand::RngCore;
 use scrypt::Params as ScryptParams;
 use serde::{Deserialize, Serialize};
@@ -106,7 +106,7 @@ fn cmd_list() -> Result<(), Error> {
         println!("(empty keyring)");
         return Ok(());
     }
-    println!("{:<20}  {}", "name", "address");
+    println!("{:<20}  address", "name");
     for k in &kr.keys {
         println!("{:<20}  {}", k.name, k.address);
     }
@@ -151,10 +151,15 @@ fn insert(name: &str, pk: &PrivateKey, pass: &str) -> Result<(), Error> {
     let r: u32 = 8;
     let p: u32 = 1;
     let key = derive_key(pass.as_bytes(), &salt, log_n, r, p)?;
-    let cipher = Aes256Gcm::new_from_slice(&key)
-        .map_err(|e| Error::argument(format!("aead: {e}")))?;
+    let cipher =
+        Aes256Gcm::new_from_slice(&key).map_err(|e| Error::argument(format!("aead: {e}")))?;
+    // `Nonce::from_slice` is flagged as deprecated by clippy via the
+    // generic-array transition, but aes-gcm 0.10 still uses 0.14 so
+    // we suppress locally rather than chase the upgrade.
+    #[allow(deprecated)]
+    let nonce_ref = Nonce::from_slice(&nonce);
     let ciphertext = cipher
-        .encrypt(Nonce::from_slice(&nonce), pk.as_bytes())
+        .encrypt(nonce_ref, pk.as_bytes())
         .map_err(|e| Error::argument(format!("encrypt: {e}")))?;
 
     kr.keys.push(Encrypted {
@@ -177,17 +182,17 @@ fn decrypt(name: &str, pass: &str) -> Result<PrivateKey, Error> {
         .iter()
         .find(|k| k.name == name)
         .ok_or_else(|| Error::argument(format!("no key named {name}")))?;
-    let salt =
-        hex::decode(&entry.salt_hex).map_err(|e| Error::argument(format!("salt: {e}")))?;
+    let salt = hex::decode(&entry.salt_hex).map_err(|e| Error::argument(format!("salt: {e}")))?;
     let nonce =
         hex::decode(&entry.nonce_hex).map_err(|e| Error::argument(format!("nonce: {e}")))?;
-    let ct = hex::decode(&entry.cipher_hex)
-        .map_err(|e| Error::argument(format!("cipher: {e}")))?;
+    let ct = hex::decode(&entry.cipher_hex).map_err(|e| Error::argument(format!("cipher: {e}")))?;
     let key = derive_key(pass.as_bytes(), &salt, entry.log_n, entry.r, entry.p)?;
-    let cipher = Aes256Gcm::new_from_slice(&key)
-        .map_err(|e| Error::argument(format!("aead: {e}")))?;
+    let cipher =
+        Aes256Gcm::new_from_slice(&key).map_err(|e| Error::argument(format!("aead: {e}")))?;
+    #[allow(deprecated)]
+    let nonce_ref = Nonce::from_slice(&nonce);
     let pt = cipher
-        .decrypt(Nonce::from_slice(&nonce), ct.as_ref())
+        .decrypt(nonce_ref, ct.as_ref())
         .map_err(|_| Error::argument("decryption failed (wrong passphrase?)"))?;
     PrivateKey::new(&pt)
 }
