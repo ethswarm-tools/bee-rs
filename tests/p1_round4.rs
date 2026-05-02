@@ -295,6 +295,10 @@ async fn pss_subscribe_yields_messages_pushed_by_server() {
         let (stream, _) = listener.accept().await.unwrap();
         // Validate the HTTP upgrade path and forward two messages.
         let path_topic = path_topic.clone();
+        // Closure signature is fixed by tokio-tungstenite; the Err
+        // variant (an http::Response<Option<String>>) is large but
+        // unavoidable here.
+        #[allow(clippy::result_large_err)]
         let cb =
             move |req: &tokio_tungstenite::tungstenite::handshake::server::Request,
                   resp: tokio_tungstenite::tungstenite::handshake::server::Response| {
