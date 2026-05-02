@@ -86,7 +86,7 @@ pub struct PeerAccounting {
 
 /// Redistribution-state snapshot. Mirrors bee-go
 /// `RedistributionStateResponse`.
-#[derive(Clone, Debug, PartialEq, Eq, Default, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RedistributionState {
     /// Minimum gas funds to play a round.
@@ -110,8 +110,9 @@ pub struct RedistributionState {
     pub last_frozen_round: u64,
     /// Last round selected.
     pub last_selected_round: u64,
-    /// Last sample duration in seconds.
-    pub last_sample_duration_seconds: u64,
+    /// Last sample duration in seconds. Bee returns this as a
+    /// fractional float (e.g. `37.96302`), not an integer.
+    pub last_sample_duration_seconds: f64,
     /// Latest seen block.
     pub block: u64,
     /// Cumulative reward (PLUR).

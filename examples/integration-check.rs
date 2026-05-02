@@ -822,11 +822,24 @@ async fn main() -> ExitCode {
     section("PSS (HTTP send only)");
     check!(tally, "pss send", async {
         let topic = Topic::from_string("bee-rs-pss");
-        client
-            .pss()
-            .send(&batch, &topic, "00", b"ping".to_vec(), None)
-            .await
-            .map_err(|e| e.to_string())
+        // Bee occasionally returns 500 here when no peer is currently
+        // reachable in the target neighborhood. Retry a couple of times
+        // before giving up — the connectivity blip is usually transient.
+        let mut last_err = String::new();
+        for attempt in 0..3 {
+            if attempt > 0 {
+                tokio::time::sleep(Duration::from_millis(500)).await;
+            }
+            match client
+                .pss()
+                .send(&batch, &topic, "00", b"ping".to_vec(), None)
+                .await
+            {
+                Ok(()) => return Ok(()),
+                Err(e) => last_err = e.to_string(),
+            }
+        }
+        Err(last_err)
     });
 
     section("PSS — websocket subscribe (connectivity smoke)");
