@@ -1,6 +1,6 @@
 [package]
 name = "bee-rs"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2024"
 rust-version = "1.85"
 description = "Rust client for the Swarm Bee API. Functional parity with bee-js / bee-go."
@@ -32,6 +32,8 @@ sha3 = "0.10"            # keccak256
 hex = "0.4"
 base64 = "0.22"
 rand_core = { version = "0.6", features = ["std"] }
+zeroize = { version = "1", features = ["zeroize_derive"] }
+subtle = "2"
 
 # Error / logging
 thiserror = "2"

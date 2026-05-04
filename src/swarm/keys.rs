@@ -21,6 +21,8 @@ use k256::ecdsa::{
     signature::hazmat::PrehashSigner,
 };
 use sha3::{Digest, Keccak256};
+use subtle::ConstantTimeEq;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::swarm::bytes::{decode_hex, encode_hex};
 use crate::swarm::errors::Error;
@@ -34,8 +36,18 @@ use crate::swarm::typed_bytes::{
 /// secp256k1 private key (32 bytes).
 ///
 /// Not [`Copy`] — copies of secret material should be intentional.
-#[derive(Clone, PartialEq, Eq)]
+/// Implements [`ZeroizeOnDrop`] so the bytes are scrubbed from memory
+/// when the value is dropped, and [`PartialEq`] is constant-time.
+#[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub struct PrivateKey([u8; PRIVATE_KEY_LENGTH]);
+
+impl PartialEq for PrivateKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.ct_eq(&other.0).into()
+    }
+}
+
+impl Eq for PrivateKey {}
 
 impl PrivateKey {
     /// Length in bytes.
@@ -326,5 +338,31 @@ mod tests {
         let s = format!("{pk:?}");
         assert!(!s.contains("44"));
         assert!(s.contains("redacted"));
+    }
+
+    #[test]
+    fn zeroize_clears_private_bytes() {
+        let mut pk = priv_repeat(0x55);
+        assert_eq!(pk.as_bytes(), &[0x55; PRIVATE_KEY_LENGTH]);
+        pk.zeroize();
+        assert_eq!(pk.as_bytes(), &[0u8; PRIVATE_KEY_LENGTH]);
+    }
+
+    #[test]
+    fn private_key_is_zeroize_on_drop() {
+        // Compile-time bound: ZeroizeOnDrop is what we promise in the
+        // type's docs; this assertion fails to compile if the trait is
+        // ever removed.
+        fn assert_zod<T: zeroize::ZeroizeOnDrop>() {}
+        assert_zod::<PrivateKey>();
+    }
+
+    #[test]
+    fn private_key_eq_is_correct() {
+        let a = priv_repeat(0x66);
+        let b = priv_repeat(0x66);
+        let c = priv_repeat(0x77);
+        assert_eq!(a, b);
+        assert_ne!(a, c);
     }
 }

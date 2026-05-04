@@ -9,6 +9,19 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-05-04
+
+### Security
+
+- **`PrivateKey` now scrubs its bytes on drop.** Derives `Zeroize` and
+  `ZeroizeOnDrop` (via the `zeroize` crate), so the 32 secret bytes
+  are overwritten with zeros when the value is dropped — mitigating
+  exposure through heap reuse, panics, and core dumps. `PartialEq`
+  is now constant-time via `subtle::ConstantTimeEq`. Public API is
+  unchanged. New deps: `zeroize` (with `zeroize_derive`), `subtle`.
+
+## [1.1.0] - 2026-05-02
+
 ### Added
 
 - **Crate-level docs.rs landing page.** Expanded the `//!` block in
