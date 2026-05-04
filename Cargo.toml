@@ -1,6 +1,6 @@
 [package]
 name = "bee-rs"
-version = "1.1.1"
+version = "1.2.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Rust client for the Swarm Bee API. Functional parity with bee-js / bee-go."
@@ -27,7 +27,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Crypto / encoding
-k256 = { version = "0.13", features = ["ecdsa", "sha256"] }
+secp256k1 = { version = "0.30", features = ["recovery", "global-context"] }
 sha3 = "0.10"            # keccak256
 hex = "0.4"
 base64 = "0.22"
@@ -59,6 +59,13 @@ rand = "0.8"
 # For the swarm-keyring example only.
 aes-gcm = "0.10"
 scrypt = { version = "0.11", default-features = false, features = ["std"] }
+# Bench-only — comparison harness for the keccak/ECDSA backends.
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+tiny-keccak = { version = "2", features = ["keccak"] }
+
+[[bench]]
+name = "hashing"
+harness = false
 
 [features]
 default = []

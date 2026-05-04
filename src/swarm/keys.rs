@@ -1,8 +1,11 @@
 //! `PrivateKey` / `PublicKey` and the Ethereum signed-message signer.
 //!
-//! Mirrors bee-go's `pkg/swarm/typed_bytes.go` crypto block. Uses
-//! pure-Rust [`k256`] (RustCrypto secp256k1) so we don't pull in a
-//! libsecp C dependency.
+//! Mirrors bee-go's `pkg/swarm/typed_bytes.go` crypto block. ECDSA is
+//! provided by [`secp256k1`] (the libsecp256k1 C bindings used by
+//! Bitcoin Core, alloy, ethers, and reth) — chosen for performance:
+//! ~4× faster signing than the previous pure-Rust `k256` backend.
+//! libsecp256k1 returns low-S signatures by default, so no manual S
+//! normalization is needed.
 //!
 //! The scheme matches bee-js:
 //!
@@ -16,10 +19,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use k256::ecdsa::{
-    RecoveryId, Signature as K256Signature, SigningKey, VerifyingKey,
-    signature::hazmat::PrehashSigner,
-};
+use secp256k1::ecdsa::{RecoverableSignature, RecoveryId};
+use secp256k1::{Message, PublicKey as SecpPublicKey, SECP256K1, SecretKey};
 use sha3::{Digest, Keccak256};
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -82,20 +83,18 @@ impl PrivateKey {
         encode_hex(&self.0)
     }
 
-    fn signing_key(&self) -> Result<SigningKey, Error> {
-        SigningKey::from_slice(&self.0).map_err(Error::crypto)
+    fn secret_key(&self) -> Result<SecretKey, Error> {
+        SecretKey::from_slice(&self.0).map_err(Error::crypto)
     }
 
     /// Derive the uncompressed (64-byte `X || Y`) public key.
     pub fn public_key(&self) -> Result<PublicKey, Error> {
-        let sk = self.signing_key()?;
-        let vk = VerifyingKey::from(&sk);
-        let point = vk.to_encoded_point(false);
-        // SEC1 uncompressed: 0x04 || X(32) || Y(32). Strip the prefix.
-        let bytes = point.as_bytes();
-        debug_assert_eq!(bytes.len(), 65);
+        let sk = self.secret_key()?;
+        let pk = SecpPublicKey::from_secret_key(SECP256K1, &sk);
+        // 0x04 || X(32) || Y(32). Strip the prefix.
+        let serialized = pk.serialize_uncompressed();
         let mut a = [0u8; PUBLIC_KEY_LENGTH];
-        a.copy_from_slice(&bytes[1..]);
+        a.copy_from_slice(&serialized[1..]);
         Ok(PublicKey(a))
     }
 
@@ -103,22 +102,15 @@ impl PrivateKey {
     /// a 65-byte `R || S || V` signature with `V ∈ {27, 28}`.
     pub fn sign(&self, data: &[u8]) -> Result<Signature, Error> {
         let digest = eth_signed_message_digest(data);
-        let sk = self.signing_key()?;
-        let (sig, recovery_id): (K256Signature, RecoveryId) =
-            sk.sign_prehash(&digest).map_err(Error::crypto)?;
-        let normalized = sig.normalize_s().unwrap_or(sig);
-        // k256 returns the recovery id corresponding to the original sig;
-        // when normalize_s flips s, the recovery id also flips parity.
-        let recovery_id = if normalized != sig {
-            RecoveryId::from_byte(recovery_id.to_byte() ^ 1).expect("flipped recovery id valid")
-        } else {
-            recovery_id
-        };
+        let sk = self.secret_key()?;
+        let msg = Message::from_digest(digest);
+        // libsecp256k1 always returns low-S; no normalization needed.
+        let sig: RecoverableSignature = SECP256K1.sign_ecdsa_recoverable(&msg, &sk);
+        let (recid, compact) = sig.serialize_compact();
 
         let mut out = [0u8; SIGNATURE_LENGTH];
-        let bytes = normalized.to_bytes();
-        out[..64].copy_from_slice(&bytes);
-        out[64] = recovery_id.to_byte() + 27;
+        out[..64].copy_from_slice(&compact);
+        out[64] = (recid as i32) as u8 + 27;
         Signature::new(&out)
     }
 }
@@ -159,11 +151,10 @@ impl PublicKey {
                 Ok(Self(a))
             }
             33 => {
-                let vk = VerifyingKey::from_sec1_bytes(b).map_err(Error::crypto)?;
-                let point = vk.to_encoded_point(false);
-                let bytes = point.as_bytes();
+                let pk = SecpPublicKey::from_slice(b).map_err(Error::crypto)?;
+                let serialized = pk.serialize_uncompressed();
                 let mut a = [0u8; PUBLIC_KEY_LENGTH];
-                a.copy_from_slice(&bytes[1..]);
+                a.copy_from_slice(&serialized[1..]);
                 Ok(Self(a))
             }
             n => Err(Error::LengthMismatch {
@@ -205,15 +196,8 @@ impl PublicKey {
         let mut full = [0u8; 65];
         full[0] = 0x04;
         full[1..].copy_from_slice(&self.0);
-        let vk = VerifyingKey::from_sec1_bytes(&full).map_err(Error::crypto)?;
-        let point = vk.to_encoded_point(true);
-        let bytes = point.as_bytes();
-        if bytes.len() != 33 {
-            return Err(Error::crypto("compressed point not 33 bytes"));
-        }
-        let mut a = [0u8; 33];
-        a.copy_from_slice(bytes);
-        Ok(a)
+        let pk = SecpPublicKey::from_slice(&full).map_err(Error::crypto)?;
+        Ok(pk.serialize())
     }
 
     /// Lowercase hex of the compressed encoding, no `0x` prefix.
@@ -251,15 +235,17 @@ impl Signature {
         let bytes = self.as_bytes();
         let v = bytes[64];
         let recovery_byte = if v >= 27 { v - 27 } else { v };
-        let recovery_id =
-            RecoveryId::from_byte(recovery_byte).ok_or_else(|| Error::crypto("invalid V byte"))?;
-        let sig = K256Signature::from_slice(&bytes[..64]).map_err(Error::crypto)?;
-        let vk = VerifyingKey::recover_from_prehash(&digest, &sig, recovery_id)
+        let recid = RecoveryId::try_from(recovery_byte as i32)
+            .map_err(|_| Error::crypto("invalid V byte"))?;
+        let recsig =
+            RecoverableSignature::from_compact(&bytes[..64], recid).map_err(Error::crypto)?;
+        let msg = Message::from_digest(digest);
+        let pk = SECP256K1
+            .recover_ecdsa(&msg, &recsig)
             .map_err(Error::crypto)?;
-        let point = vk.to_encoded_point(false);
-        let raw = point.as_bytes();
+        let serialized = pk.serialize_uncompressed();
         let mut a = [0u8; PUBLIC_KEY_LENGTH];
-        a.copy_from_slice(&raw[1..]);
+        a.copy_from_slice(&serialized[1..]);
         Ok(PublicKey(a))
     }
 

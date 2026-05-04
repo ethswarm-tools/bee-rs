@@ -9,6 +9,26 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-05-04
+
+### Changed
+
+- **ECDSA backend swapped from `k256` (pure Rust) to `secp256k1` (the
+  libsecp256k1 C bindings used by Bitcoin Core, alloy, ethers, reth).**
+  ~3.6× faster signing on the eth-signed-message scheme: `PrivateKey::sign`
+  on a 32-byte message dropped from ~118 µs to ~33 µs in our benches.
+  Public API is unchanged — k256 was never exposed through any
+  `pub` type — so this is non-breaking. Adds a C build dependency
+  (`secp256k1-sys`).
+
+### Added
+
+- **`benches/hashing.rs`.** Criterion harness covering `keccak256`
+  (`sha3` vs `tiny-keccak`), the BMT chunk-address pipeline, and
+  ECDSA sign throughput. Used to validate the ECDSA backend swap;
+  also surfaced that `sha3` is *not* a bottleneck (it ties with
+  `tiny-keccak` to within noise), so the keccak crate is unchanged.
+
 ## [1.1.1] - 2026-05-04
 
 ### Security
