@@ -288,6 +288,15 @@ impl DebugApi {
         let builder = request(&self.inner, Method::GET, &path)?;
         self.inner.send_json(builder).await
     }
+
+    /// `GET /timesettlements` — totals + per-peer breakdown for the
+    /// time-based (pseudo-settle / refresh) settlement path. Same
+    /// schema as [`Self::settlements`] but counts only refresh-rate
+    /// settlements rather than cheques.
+    pub async fn time_settlements(&self) -> Result<Settlements, Error> {
+        let builder = request(&self.inner, Method::GET, "timesettlements")?;
+        self.inner.send_json(builder).await
+    }
 }
 
 async fn tx_hash(inner: &Inner, builder: reqwest::RequestBuilder) -> Result<String, Error> {

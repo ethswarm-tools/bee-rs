@@ -9,6 +9,41 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-05-06
+
+### Added
+
+- **`Client::ping`.** Returns the round-trip [`Duration`] of a `GET
+  /health` against the configured node. Useful for connection-status
+  indicators in dashboards and TUIs.
+- **`Client::with_token`.** Convenience constructor that builds a
+  client which sends `Authorization: Bearer <token>` on every request.
+  Equivalent to building a `reqwest::Client` with `default_headers` by
+  hand and passing it to [`Client::with_http_client`], but one line.
+- **Tracing instrumentation on the HTTP send path.** Every request
+  now emits a `tracing::debug!` event at target `bee::http` carrying
+  `method`, `url`, `status`, and `elapsed_ms`. Subscribe with
+  `RUST_LOG=bee::http=debug` (or any custom subscriber) to surface
+  live API traffic — designed for the bee-tui command-log pane.
+- **`DebugApi::time_settlements`.** `GET /timesettlements` — the
+  pseudo-settle / refresh-rate counterpart to `settlements()`. Same
+  `Settlements` schema, distinguishes time-based settlements from
+  cheque-based settlements per peer.
+- **`DebugApi::r_chash`.** `GET /rchash/{depth}/{anchor1}/{anchor2}`
+  — reserve-commitment hash with sample inclusion proofs. Returned
+  `RCHashResponse.duration_seconds` is the natural sampler benchmark
+  (does the node hardware finish a sample inside the round deadline?).
+  New types: `RCHashResponse`, `ChunkInclusionProofs`,
+  `ChunkInclusionProof`, `PostageProof`, `SocProof` — re-exported
+  from `bee::debug`.
+- **`FileApi::chunks_stream`.** `WS /chunks/stream` — websocket-driven
+  chunk upload session. Each [`ChunkStream::send_chunk`] sends one
+  binary frame and awaits the server's single-byte ack; the session
+  remains open until [`ChunkStream::close`] (or until dropped). Maps
+  to bee-go's chunks-stream handler. Pairs with `swarm-tag` query for
+  buffered uploads. Foundation for live upload trackers in dashboards
+  (notably bee-tui) without per-chunk HTTP round-trip overhead.
+
 ## [1.2.0] - 2026-05-04
 
 ### Changed

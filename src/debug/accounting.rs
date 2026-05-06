@@ -125,6 +125,100 @@ pub struct RedistributionState {
     pub is_healthy: bool,
 }
 
+/// Reserve-commitment hash + sample inclusion proofs returned by
+/// `GET /rchash/{depth}/{anchor1}/{anchor2}`. Mirrors bee-go
+/// `ApiRCHashResponse`.
+#[derive(Clone, Debug, PartialEq, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RCHashResponse {
+    /// Time the sampler took to produce the commitment, in seconds.
+    /// Returned as a fractional float (e.g. `12.4`).
+    pub duration_seconds: f64,
+    /// Reserve commitment hash (64-char lowercase hex).
+    pub hash: String,
+    /// Inclusion proofs for the first, second, and last chunks of
+    /// the reserve sample.
+    #[serde(default)]
+    pub proofs: ChunkInclusionProofs,
+}
+
+/// Trio of chunk-inclusion proofs that backs the reserve commitment.
+#[derive(Clone, Debug, PartialEq, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChunkInclusionProofs {
+    /// Inclusion proof for the first sampled chunk.
+    #[serde(default)]
+    pub proof1: ChunkInclusionProof,
+    /// Inclusion proof for the second sampled chunk.
+    #[serde(default)]
+    pub proof2: ChunkInclusionProof,
+    /// Inclusion proof for the last sampled chunk.
+    #[serde(default)]
+    pub proof_last: ChunkInclusionProof,
+}
+
+/// Inclusion proof for one chunk in the reserve sample.
+#[derive(Clone, Debug, PartialEq, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChunkInclusionProof {
+    /// Chunk span (declared payload length, in bytes).
+    #[serde(default)]
+    pub chunk_span: u64,
+    /// Postage stamp proof for this chunk.
+    #[serde(default)]
+    pub postage_proof: PostageProof,
+    /// First Merkle path of segment hashes; nullable when not produced.
+    pub proof_segments: Option<Vec<String>>,
+    /// Second Merkle path of segment hashes; nullable.
+    pub proof_segments2: Option<Vec<String>>,
+    /// Third Merkle path of segment hashes; nullable.
+    pub proof_segments3: Option<Vec<String>>,
+    /// First leaf segment proven against the chunk root.
+    #[serde(default)]
+    pub prove_segment: String,
+    /// Second leaf segment proven against the chunk root.
+    #[serde(default)]
+    pub prove_segment2: String,
+    /// Single-owner-chunk proof; present iff the chunk is a SOC.
+    pub soc_proof: Option<Vec<SocProof>>,
+}
+
+/// Postage stamp proof embedded in a [`ChunkInclusionProof`].
+#[derive(Clone, Debug, PartialEq, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PostageProof {
+    /// Bucket index used by the stamp.
+    #[serde(default)]
+    pub index: String,
+    /// Postage batch ID this stamp was issued from.
+    #[serde(default)]
+    pub postage_id: String,
+    /// Stamp signature (hex).
+    #[serde(default)]
+    pub signature: String,
+    /// Stamp creation timestamp (decimal string of unix nanoseconds).
+    #[serde(default)]
+    pub time_stamp: String,
+}
+
+/// Single-owner-chunk proof embedded in a [`ChunkInclusionProof`].
+#[derive(Clone, Debug, PartialEq, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SocProof {
+    /// Address of the SOC chunk.
+    #[serde(default)]
+    pub chunk_addr: String,
+    /// SOC identifier.
+    #[serde(default)]
+    pub identifier: String,
+    /// SOC signature (hex).
+    #[serde(default)]
+    pub signature: String,
+    /// SOC signer (Ethereum address, hex).
+    #[serde(default)]
+    pub signer: String,
+}
+
 impl DebugApi {
     /// `GET /balances` — settlement balances with every known peer.
     pub async fn balances(&self) -> Result<Vec<Balance>, Error> {
@@ -233,6 +327,23 @@ impl DebugApi {
     /// `GET /redistributionstate` — redistribution worker snapshot.
     pub async fn redistribution_state(&self) -> Result<RedistributionState, Error> {
         let builder = request(&self.inner, Method::GET, "redistributionstate")?;
+        self.inner.send_json(builder).await
+    }
+
+    /// `GET /rchash/{depth}/{anchor1}/{anchor2}` — reserve-commitment
+    /// hash with sample inclusion proofs. Used by the redistribution
+    /// game; in a TUI / dashboard this is also the natural "sampler
+    /// benchmark" — the returned `duration_seconds` tells operators
+    /// whether their hardware can complete a sample within the round
+    /// deadline.
+    pub async fn r_chash(
+        &self,
+        depth: u8,
+        anchor1: &str,
+        anchor2: &str,
+    ) -> Result<RCHashResponse, Error> {
+        let path = format!("rchash/{depth}/{anchor1}/{anchor2}");
+        let builder = request(&self.inner, Method::GET, &path)?;
         self.inner.send_json(builder).await
     }
 }

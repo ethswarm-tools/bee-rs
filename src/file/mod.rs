@@ -29,6 +29,7 @@
 
 mod bzz;
 mod chunk;
+mod chunks_stream;
 mod data;
 mod feeds;
 mod soc;
@@ -38,6 +39,7 @@ pub use bzz::{
     CollectionEntry, collection_size, hash_collection_entries, hash_directory,
     read_directory_entries,
 };
+pub use chunks_stream::ChunkStream;
 pub use data::ReferenceInformation;
 pub use feeds::{
     FeedReader, FeedUpdate, FeedWriter, feed_update_chunk_reference, make_feed_identifier,

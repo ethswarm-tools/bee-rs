@@ -12,6 +12,7 @@
 //! ```
 
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use reqwest::{Method, RequestBuilder};
 use serde::de::DeserializeOwned;
@@ -38,15 +39,33 @@ impl Inner {
 
     /// Build a request, send it, and translate non-2xx responses into
     /// [`Error::Response`] with method / URL / capped body captured.
+    ///
+    /// Emits `tracing::debug!` events at target `bee::http` carrying
+    /// `method`, `url`, `status`, and `elapsed_ms` for every request.
+    /// Subscribe with `RUST_LOG=bee::http=debug` (or any subscriber
+    /// that captures spans/events) to surface live API traffic — the
+    /// bee-tui command-log pane uses this.
     pub(crate) async fn send(&self, builder: RequestBuilder) -> Result<reqwest::Response, Error> {
         let request = builder.build()?;
         let method = request.method().to_string();
         let url = request.url().to_string();
+        let start = Instant::now();
+
         let resp = self.http.execute(request).await?;
+        let elapsed_ms = start.elapsed().as_millis() as u64;
+        let status = resp.status().as_u16();
+
         if resp.status().is_success() {
+            tracing::debug!(
+                target: "bee::http",
+                method = %method,
+                url = %url,
+                status,
+                elapsed_ms,
+                "bee api request"
+            );
             return Ok(resp);
         }
-        let status = resp.status().as_u16();
         let status_text = format!(
             "{status} {}",
             resp.status().canonical_reason().unwrap_or("")
@@ -55,6 +74,15 @@ impl Inner {
         .to_string();
         let body = resp.bytes().await.map(|b| b.to_vec()).unwrap_or_default();
         let n = body.len().min(RESPONSE_BODY_CAP);
+        tracing::debug!(
+            target: "bee::http",
+            method = %method,
+            url = %url,
+            status,
+            elapsed_ms,
+            body_len = body.len(),
+            "bee api error response"
+        );
         Err(Error::Response {
             method,
             url,
@@ -124,9 +152,40 @@ impl Client {
         })
     }
 
+    /// Construct a client that sends `Authorization: Bearer <token>`
+    /// on every request. Convenience for talking to a Bee node running
+    /// with restricted-mode auth.
+    ///
+    /// For more control (custom timeouts, TLS roots, additional
+    /// headers), build a [`reqwest::Client`] yourself and pass it via
+    /// [`Client::with_http_client`].
+    pub fn with_token(url: &str, token: &str) -> Result<Self, Error> {
+        use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
+        let value = HeaderValue::from_str(&format!("Bearer {token}"))
+            .map_err(|e| Error::argument(format!("invalid token: {e}")))?;
+        let mut headers = HeaderMap::new();
+        headers.insert(AUTHORIZATION, value);
+        let http = reqwest::Client::builder()
+            .default_headers(headers)
+            .build()
+            .map_err(Error::Transport)?;
+        Self::with_http_client(url, http)
+    }
+
     /// Borrow the configured base URL.
     pub fn base_url(&self) -> &Url {
         &self.inner.base_url
+    }
+
+    /// `GET /health` round-trip latency. Useful for connection-status
+    /// indicators in dashboards and TUIs. Returns the elapsed
+    /// [`Duration`] regardless of body — the response is not parsed.
+    pub async fn ping(&self) -> Result<Duration, Error> {
+        let url = self.inner.url("health")?;
+        let builder = self.inner.http.request(Method::GET, url);
+        let start = Instant::now();
+        let _ = self.inner.send(builder).await?;
+        Ok(start.elapsed())
     }
 
     /// Sub-service: file / data / chunk / SOC / feed / collection

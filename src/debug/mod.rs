@@ -7,7 +7,10 @@ mod node;
 mod peers;
 mod transactions;
 
-pub use accounting::{Balance, PeerAccounting, RedistributionState};
+pub use accounting::{
+    Balance, ChunkInclusionProof, ChunkInclusionProofs, PeerAccounting, PostageProof,
+    RCHashResponse, RedistributionState, SocProof,
+};
 pub use chequebook::{
     CashoutResult, Cheque, ChequebookBalance, LastCashoutAction, LastCheque, PeerCheques,
     Settlement, Settlements, Wallet,
