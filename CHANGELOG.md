@@ -9,6 +9,32 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-05-07
+
+### Added
+
+- **Extended `Topology` parse.** `GET /topology` now exposes the full
+  bee-go shape: 32 per-bin [`BinInfo`] entries (population, connected,
+  connected/disconnected peer lists with per-peer metrics), the
+  `reachability` and `networkAvailability` strings, and a separate
+  `light_nodes` bin. Backwards-compatible — older Bee builds and
+  stripped-down dev mocks parse cleanly with empty defaults.
+- **`PeerInfo`** with optional [`MetricSnapshotView`] (lastSeen,
+  latency EWMA, session direction, healthy flag, per-peer
+  reachability) for the entries inside each bin.
+- Bins are exposed as a `Vec<BinInfo>` of length 32, indexable by
+  bin number — the flat `bin_0`..`bin_31` JSON keys are folded into
+  one indexable container by a custom deserializer. Empty
+  `connectedPeers` / `disconnectedPeers` are accepted as either `[]`
+  or JSON `null` (Go's default for nil slices), so the parse is
+  robust across Bee versions.
+
+### Notes
+
+- This release is a strict additive extension; no existing fields or
+  method signatures changed. Consumers on `1.3` can upgrade to `1.4`
+  without code changes.
+
 ## [1.3.0] - 2026-05-06
 
 ### Added
