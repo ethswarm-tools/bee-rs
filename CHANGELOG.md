@@ -33,6 +33,8 @@ format follows [Keep a Changelog]; the project adheres to
   up alongside this release (`needless_match` / `manual_map` against
   `BatchId` parsing).
 
+## [1.4.1] - 2026-05-07
+
 ### Fixed
 
 - Re-export `BinInfo`, `MetricSnapshotView`, and `PeerInfo` from
