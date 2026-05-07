@@ -9,6 +9,15 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-05-07
+
+### Fixed
+
+- Re-export `BinInfo`, `MetricSnapshotView`, and `PeerInfo` from
+  `bee::debug`. These types are returned inside `Topology` but were
+  not part of the public surface in 1.4.0, so consumers couldn't
+  spell them in their own type signatures.
+
 ## [1.4.0] - 2026-05-07
 
 ### Added

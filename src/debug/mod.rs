@@ -17,7 +17,7 @@ pub use chequebook::{
 };
 pub use loggers::{Logger, LoggerListing};
 pub use node::*;
-pub use peers::{Addresses, Peer, ReserveState, Topology};
+pub use peers::{Addresses, BinInfo, MetricSnapshotView, Peer, PeerInfo, ReserveState, Topology};
 pub use transactions::TransactionInfo;
 
 use std::sync::Arc;
