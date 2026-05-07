@@ -1,7 +1,7 @@
 //! End-to-end tests for the round-2 P1 surface: SOC upload, feeds,
 //! pin / tag / stewardship.
 
-use bee::api::Tag;
+use bee::api::{PinIntegrity, Tag};
 use bee::file::{feed_update_chunk_reference, make_feed_identifier};
 use bee::swarm::{
     BatchId, EthAddress, Identifier, PrivateKey, Reference, Signature, Topic,
@@ -285,6 +285,72 @@ async fn list_pins_decodes_references() {
     let client = Client::new(&server.uri()).unwrap();
     let pins = client.api().list_pins().await.unwrap();
     assert_eq!(pins, vec![r1, r2]);
+}
+
+#[tokio::test]
+async fn check_pins_parses_ndjson_stream() {
+    // Bee streams `/pins/check` as one JSON object per line under
+    // `Transfer-Encoding: chunked` — verify we collect every entry
+    // and skip blank lines.
+    let server = MockServer::start().await;
+    let r1 = Reference::new(&[0x11; 32]).unwrap();
+    let r2 = Reference::new(&[0x22; 32]).unwrap();
+    let body = format!(
+        "{}\n{}\n\n",
+        json!({"reference": r1.to_hex(), "total": 4, "missing": 0, "invalid": 0}),
+        json!({"reference": r2.to_hex(), "total": 9, "missing": 1, "invalid": 0}),
+    );
+    Mock::given(method("GET"))
+        .and(path("/pins/check"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "application/json")
+                .set_body_string(body),
+        )
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let entries = client.api().check_pins(None).await.unwrap();
+    assert_eq!(
+        entries,
+        vec![
+            PinIntegrity {
+                reference: r1,
+                total: 4,
+                missing: 0,
+                invalid: 0,
+            },
+            PinIntegrity {
+                reference: r2,
+                total: 9,
+                missing: 1,
+                invalid: 0,
+            },
+        ],
+    );
+    assert!(entries[0].is_healthy());
+    assert!(!entries[1].is_healthy());
+}
+
+#[tokio::test]
+async fn check_pins_passes_ref_query_param() {
+    let server = MockServer::start().await;
+    let r = Reference::new(&[0x55; 32]).unwrap();
+    Mock::given(method("GET"))
+        .and(path("/pins/check"))
+        .and(query_param("ref", r.to_hex()))
+        .respond_with(ResponseTemplate::new(200).set_body_string(format!(
+            "{}\n",
+            json!({"reference": r.to_hex(), "total": 1, "missing": 0, "invalid": 0}),
+        )))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let entries = client.api().check_pins(Some(&r)).await.unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].reference, r);
 }
 
 // =====================================================================

@@ -64,6 +64,40 @@ impl ApiService {
         Ok(r.references)
     }
 
+    /// Validate the integrity of pinned chunks — `GET /pins/check`.
+    /// When `reference` is `Some`, only that pin is checked; when
+    /// `None`, every pinned root is walked.
+    ///
+    /// Bee streams the result as **NDJSON** (one
+    /// [`PinIntegrity`] object per line under chunked
+    /// transfer-encoding) so it can flush progress for large pin
+    /// sets. We collect the stream into a `Vec` once the response
+    /// completes — fine for operator dashboards that only need a
+    /// single point-in-time view; if you need progressive reporting
+    /// against a node with thousands of pins, drop down to
+    /// [`crate::Client::http`] and stream the body yourself.
+    pub async fn check_pins(
+        &self,
+        reference: Option<&Reference>,
+    ) -> Result<Vec<PinIntegrity>, Error> {
+        let mut builder = request(&self.inner, Method::GET, "pins/check")?;
+        if let Some(r) = reference {
+            builder = builder.query(&[("ref", r.to_hex())]);
+        }
+        let resp = self.inner.send(builder).await?;
+        let bytes = resp.bytes().await?;
+        let mut out = Vec::new();
+        for line in bytes.split(|&b| b == b'\n') {
+            let trimmed = trim_ws(line);
+            if trimmed.is_empty() {
+                continue;
+            }
+            let entry: PinIntegrity = serde_json::from_slice(trimmed)?;
+            out.push(entry);
+        }
+        Ok(out)
+    }
+
     // ---- tags ---------------------------------------------------------
 
     /// Create a new tag — `POST /tags`.
@@ -236,6 +270,46 @@ impl ApiService {
             .header("Swarm-Postage-Batch-Id", batch_id.to_hex());
         self.inner.send_json(builder).await
     }
+}
+
+/// One entry of the [`ApiService::check_pins`] result. Mirrors
+/// bee-go's `PinIntegrityResponse`.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+pub struct PinIntegrity {
+    /// Root reference of the pin that was checked.
+    pub reference: Reference,
+    /// Total chunks reachable from the pin.
+    pub total: u64,
+    /// Chunks that should be reachable but are missing locally.
+    pub missing: u64,
+    /// Chunks that are present but failed integrity validation.
+    pub invalid: u64,
+}
+
+impl PinIntegrity {
+    /// True when no chunks are missing or invalid — the pin is
+    /// fully retrievable from local storage.
+    pub fn is_healthy(&self) -> bool {
+        self.missing == 0 && self.invalid == 0
+    }
+}
+
+fn trim_ws(mut s: &[u8]) -> &[u8] {
+    while let [first, rest @ ..] = s {
+        if first.is_ascii_whitespace() {
+            s = rest;
+        } else {
+            break;
+        }
+    }
+    while let [rest @ .., last] = s {
+        if last.is_ascii_whitespace() {
+            s = rest;
+        } else {
+            break;
+        }
+    }
+    s
 }
 
 /// Response from [`ApiService::create_grantees`] /

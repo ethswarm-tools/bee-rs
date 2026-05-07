@@ -164,6 +164,22 @@ async fn chequebook_balance_and_deposit() {
 }
 
 #[tokio::test]
+async fn chequebook_address_extracts_contract_address() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/chequebook/address"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "chequebookAddress": "0xCE3EE0201A1A8296E8bC2BE9f912eC21708fd615",
+        })))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let addr = client.debug().chequebook_address().await.unwrap();
+    assert_eq!(addr, "0xCE3EE0201A1A8296E8bC2BE9f912eC21708fd615");
+}
+
+#[tokio::test]
 async fn cashout_last_cheque_sends_gas_price_header() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))

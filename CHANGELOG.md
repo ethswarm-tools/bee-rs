@@ -9,7 +9,29 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
-## [1.4.1] - 2026-05-07
+## [1.5.0] - 2026-05-07
+
+### Added
+
+- **`DebugApi::chequebook_address`** — `GET /chequebook/address`
+  returns the chequebook contract address as a plain string. Useful
+  for surfacing the chequebook on operator dashboards or audit
+  workflows that need to look the contract up on a block explorer
+  without parsing the full `/wallet` response.
+- **`ApiService::check_pins`** — `GET /pins/check[?ref=<root>]`
+  walks every (or one) pinned reference and returns a
+  `Vec<PinIntegrity>` with `{reference, total, missing, invalid}`
+  per pin. Bee streams the response as NDJSON under chunked
+  transfer-encoding; bee-rs collects the stream into a `Vec` and
+  exposes `PinIntegrity::is_healthy()` for the common case of "are
+  all my pins fully retrievable?". Closes the last gaps against the
+  Bee 8.0.0 OpenAPI surface (chequebook + pins).
+
+### Notes
+
+- Pre-existing clippy regression in `examples/v1_3_check.rs` cleaned
+  up alongside this release (`needless_match` / `manual_map` against
+  `BatchId` parsing).
 
 ### Fixed
 

@@ -6,7 +6,7 @@ pub mod endpoints;
 pub mod options;
 pub mod result;
 
-pub use endpoints::{ApiService, EnvelopeResponse, GranteeResponse, Tag};
+pub use endpoints::{ApiService, EnvelopeResponse, GranteeResponse, PinIntegrity, Tag};
 pub use options::{
     CollectionUploadOptions, DownloadOptions, FileUploadOptions, HeaderPairs, OnEntryFn,
     PostageBatchOptions, RedundancyLevel, RedundancyStrategy, RedundantUploadOptions,

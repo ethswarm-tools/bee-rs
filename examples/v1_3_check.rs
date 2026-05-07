@@ -122,13 +122,9 @@ async fn main() -> ExitCode {
     // ---- Phase C: /chunks/stream WS upload ------------------------
     println!("\n=== Phase C: /chunks/stream ===");
 
-    let batch_id = match env::var("BEE_BATCH_ID")
+    let batch_id = env::var("BEE_BATCH_ID")
         .ok()
-        .and_then(|h| BatchId::from_hex(&h).ok())
-    {
-        Some(b) => Some(b),
-        None => None,
-    };
+        .and_then(|h| BatchId::from_hex(&h).ok());
 
     if let Some(bid) = batch_id {
         // Make a small content-addressed chunk (span || 10 bytes).

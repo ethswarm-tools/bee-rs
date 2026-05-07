@@ -213,6 +213,21 @@ impl DebugApi {
         self.inner.send_json(builder).await
     }
 
+    /// `GET /chequebook/address` — the on-chain chequebook contract
+    /// address. Useful when an operator needs to look the chequebook
+    /// up on a block explorer or audit it independently from the
+    /// wallet response.
+    pub async fn chequebook_address(&self) -> Result<String, Error> {
+        let builder = request(&self.inner, Method::GET, "chequebook/address")?;
+        #[derive(Deserialize)]
+        struct Resp {
+            #[serde(rename = "chequebookAddress")]
+            chequebook_address: String,
+        }
+        let r: Resp = self.inner.send_json(builder).await?;
+        Ok(r.chequebook_address)
+    }
+
     /// `POST /chequebook/deposit?amount=` — deposit BZZ into the
     /// chequebook from the operator wallet.
     pub async fn chequebook_deposit(&self, amount: &BigInt) -> Result<String, Error> {
