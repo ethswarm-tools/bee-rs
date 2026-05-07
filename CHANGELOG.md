@@ -9,6 +9,40 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-05-07
+
+### Added
+
+- **`DebugApi::set_logger(expression, verbosity)`** — corrects a
+  long-standing bug. Bee's actual route is
+  `PUT /loggers/{base64url(exp)}/{verbosity}`; the verbosity is
+  **mandatory** in the path. The previous single-arg
+  `set_logger_verbosity(expr)` emitted `PUT /loggers/{exp}` and
+  404'd on every real Bee build (only ever "succeeded" against
+  mock servers wired to the wrong path). The new method validates
+  the verbosity client-side against `LOG_LEVELS = [none, error,
+  warning, info, debug, all]` before building the request.
+- **`bee::debug::LOG_LEVELS`** — public constant listing every
+  verbosity Bee accepts, useful for surfacing the choice list in
+  TUIs / dashboards.
+
+### Changed
+
+- `loggers_by_expression` now base64url-encodes the expression
+  rather than standard-base64. Identical output for ASCII
+  expressions (the typical case) but correct for inputs whose
+  encoding contains `+/`.
+
+### Deprecated
+
+- `DebugApi::set_logger_verbosity(expression)` — kept as a
+  deprecated stub that returns an [`Error::Argument`] pointing to
+  `set_logger`. The signature was provably broken (missing the
+  verbosity component) and the method has never functioned against
+  a real Bee, so removing it isn't a real-world break — but the
+  symbol is preserved so existing call sites compile-warn rather
+  than compile-fail.
+
 ## [1.5.0] - 2026-05-07
 
 ### Added

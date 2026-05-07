@@ -237,9 +237,12 @@ async fn loggers_list_and_set_verbosity() {
         })))
         .mount(&server)
         .await;
-    // base64("node/api") = "bm9kZS9hcGk="
+    // base64url("node/api") = "bm9kZS9hcGk=" (same as standard
+    // base64 for ASCII inputs that don't contain `+/`).
+    // Bee's PUT route is /loggers/{exp}/{verbosity} — both
+    // components are mandatory.
     Mock::given(method("PUT"))
-        .and(path("/loggers/bm9kZS9hcGk="))
+        .and(path("/loggers/bm9kZS9hcGk=/debug"))
         .respond_with(ResponseTemplate::new(200))
         .mount(&server)
         .await;
@@ -259,7 +262,7 @@ async fn loggers_list_and_set_verbosity() {
 
     client
         .debug()
-        .set_logger_verbosity("node/api")
+        .set_logger("node/api", "debug")
         .await
         .unwrap();
     let by_expr = client
@@ -268,6 +271,40 @@ async fn loggers_list_and_set_verbosity() {
         .await
         .unwrap();
     assert!(by_expr.loggers.is_empty());
+}
+
+#[tokio::test]
+async fn set_logger_rejects_invalid_verbosity() {
+    let server = MockServer::start().await;
+    // No mock — the request must never go out because client-side
+    // validation should reject the bogus level first.
+    let client = Client::new(&server.uri()).unwrap();
+    let err = client
+        .debug()
+        .set_logger("node/api", "loud")
+        .await
+        .unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("loud") && msg.contains("verbosity"),
+        "expected message to call out the invalid level, got: {msg}",
+    );
+}
+
+#[tokio::test]
+#[allow(deprecated)]
+async fn set_logger_verbosity_legacy_returns_error() {
+    let server = MockServer::start().await;
+    let client = Client::new(&server.uri()).unwrap();
+    let err = client
+        .debug()
+        .set_logger_verbosity("node/api")
+        .await
+        .unwrap_err();
+    assert!(
+        format!("{err}").contains("set_logger"),
+        "deprecated stub must point to the new method",
+    );
 }
 
 // =====================================================================

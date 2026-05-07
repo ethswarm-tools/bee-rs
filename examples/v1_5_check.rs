@@ -27,5 +27,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("{} pins checked", pins.len());
 
+    println!("\n=== set_logger (1.6 fix) ===");
+    // Bumping node/api to debug then back to info should both
+    // succeed; this exercised the 1.5 path bug (verbosity missing).
+    client.debug().set_logger("node/api", "debug").await?;
+    println!("  PUT /loggers/.../debug → 200");
+    client.debug().set_logger("node/api", "info").await?;
+    println!("  PUT /loggers/.../info  → 200");
+
     Ok(())
 }
