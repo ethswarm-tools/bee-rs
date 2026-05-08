@@ -258,5 +258,5 @@ pub mod swarm;
 
 pub use dev::DevClient;
 
-pub use client::Client;
+pub use client::{Client, MAX_JSON_RESPONSE_BYTES};
 pub use swarm::{Error, Result};

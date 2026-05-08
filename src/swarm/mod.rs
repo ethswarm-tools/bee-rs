@@ -26,7 +26,7 @@ pub use cid::{
     convert_reference_to_cid,
 };
 pub use duration::Duration as BeeDuration;
-pub use errors::{Error, RESPONSE_BODY_CAP, Result};
+pub use errors::{Error, RESPONSE_BODY_CAP, Result, redact_url};
 pub use file_chunker::{ChunkerRoot, FileChunker, MAX_BRANCHES, SealedChunk};
 pub use gsoc::{GSOC_DEFAULT_PROXIMITY, GSOC_MINE_START, gsoc_mine, proximity};
 pub use keys::{PrivateKey, PublicKey, eth_signed_message_digest};

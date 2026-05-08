@@ -4,6 +4,22 @@
 
 use std::fmt;
 
+use url::Url;
+
+/// Return a printable form of `url` with the query string and
+/// fragment stripped. Used by the HTTP send path and error formatter
+/// so that values the request put in the query string —
+/// SOC signatures (`?sig=`), Act publisher keys (`?recipient=`),
+/// or an auth token mistakenly passed there — never end up in logs
+/// or panics. The path is preserved (path segments are hex /
+/// identifier-only and considered public).
+pub fn redact_url(url: &Url) -> String {
+    let mut u = url.clone();
+    u.set_query(None);
+    u.set_fragment(None);
+    u.to_string()
+}
+
 /// Result alias used across the crate.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 

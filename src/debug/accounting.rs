@@ -8,7 +8,7 @@ use num_bigint::BigInt;
 use reqwest::Method;
 use serde::{Deserialize, Deserializer};
 
-use crate::client::request;
+use crate::client::{Inner, MAX_JSON_RESPONSE_BYTES, request};
 use crate::swarm::Error;
 
 use super::DebugApi;
@@ -358,7 +358,7 @@ async fn tx_hash_response(
         tx_hash: String,
     }
     let resp = inner.send(builder).await?;
-    let bytes: Bytes = resp.bytes().await?;
+    let bytes: Bytes = Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?;
     let r: Resp = serde_json::from_slice(&bytes)?;
     Ok(r.tx_hash)
 }

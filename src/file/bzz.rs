@@ -11,9 +11,10 @@ use serde::Deserialize;
 use crate::api::{
     CollectionUploadOptions, DownloadOptions, FileHeaders, FileUploadOptions, UploadProgress,
     UploadResult, prepare_collection_upload_headers, prepare_download_headers,
+    validate_collection_upload_options,
     prepare_file_upload_headers,
 };
-use crate::client::{Inner, request};
+use crate::client::{Inner, MAX_JSON_RESPONSE_BYTES, request};
 use crate::manifest::{MantarayNode, populate_self_addresses};
 use crate::swarm::file_chunker::FileChunker;
 use crate::swarm::{BatchId, Error, Reference};
@@ -79,7 +80,7 @@ impl FileApi {
         let builder = Inner::apply_headers(builder, prepare_file_upload_headers(batch_id, opts));
         let resp = self.inner.send(builder).await?;
         let headers = resp.headers().clone();
-        let body: UploadBody = serde_json::from_slice(&resp.bytes().await?)?;
+        let body: UploadBody = serde_json::from_slice(&Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?)?;
         UploadResult::from_response(&body.reference, &headers)
     }
 
@@ -152,6 +153,7 @@ impl FileApi {
             }
         }
         let tar_bytes = build_tar_archive(entries)?;
+        validate_collection_upload_options(opts)?;
         let builder = request(&self.inner, Method::POST, "bzz")?
             .header("Content-Type", "application/x-tar")
             .header("Swarm-Collection", "true")
@@ -160,7 +162,7 @@ impl FileApi {
             Inner::apply_headers(builder, prepare_collection_upload_headers(batch_id, opts));
         let resp = self.inner.send(builder).await?;
         let headers = resp.headers().clone();
-        let body: UploadBody = serde_json::from_slice(&resp.bytes().await?)?;
+        let body: UploadBody = serde_json::from_slice(&Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?)?;
         UploadResult::from_response(&body.reference, &headers)
     }
 

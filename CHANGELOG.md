@@ -9,6 +9,41 @@ format follows [Keep a Changelog]; the project adheres to
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-05-08
+
+Security hardening pass on the v1.6.0 surface. Mirrors the bee-go
+v1.2.1 and bee-py v1.0.3 follow-ups. No behavior change for
+well-formed inputs against a trusted Bee node.
+
+### Security
+
+- **Cap response body sizes** at the new
+  `bee::MAX_JSON_RESPONSE_BYTES` (32 MiB). Added
+  `Inner::read_capped(resp, max)` that uses `Response::content_length()`
+  for an upfront check and streams chunks otherwise, aborting as soon
+  as the cap is exceeded. Every JSON-intent body read in the crate
+  (`send_json` plus the `serde_json::from_slice(&resp.bytes()...)`
+  patterns in `file::{bzz,chunk,data,soc}`, `debug::{accounting,
+  chequebook,node}`, `api::endpoints::{check_pins,is_retrievable}`)
+  was swept to use it. Bulk file downloads
+  (`download_file`, `download_file_path`, `download_chunk`,
+  `download_data`) intentionally bypass the cap — callers there hold
+  the buffering policy.
+- **Redact query strings in `bee::http` tracing events and
+  `Error::Response.url`**. New `bee::swarm::redact_url(&Url)` strips
+  the query string and fragment. Bee uses the query for SOC
+  signatures (`?sig=`) and Act publisher keys (`?recipient=`);
+  callers may also (mistakenly) put auth tokens there. The path is
+  preserved (path segments are hex / identifier-only).
+- **Validate `CollectionUploadOptions.index_document` /
+  `.error_document`** for CR / LF / NUL bytes via the new
+  `bee::api::validate_collection_upload_options(opts)`.
+  `upload_collection_entries` (and therefore `upload_collection`,
+  `stream_directory`, `stream_collection_entries`) calls it before
+  building the request. As defense in depth,
+  `prepare_collection_upload_headers` itself silently drops values
+  containing those bytes.
+
 ## [1.6.0] - 2026-05-07
 
 ### Added

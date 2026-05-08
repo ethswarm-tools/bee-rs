@@ -4,7 +4,7 @@ use num_bigint::BigInt;
 use reqwest::Method;
 use serde::{Deserialize, Deserializer};
 
-use crate::client::request;
+use crate::client::{Inner, MAX_JSON_RESPONSE_BYTES, request};
 use crate::swarm::Error;
 
 use super::DebugApi;
@@ -237,7 +237,7 @@ impl DebugApi {
                 struct Resp {
                     gateway: bool,
                 }
-                let r: Resp = serde_json::from_slice(&resp.bytes().await?)?;
+                let r: Resp = serde_json::from_slice(&Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?)?;
                 Ok(r.gateway)
             }
             Err(e) if e.status() == Some(404) => Ok(false),

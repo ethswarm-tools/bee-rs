@@ -8,7 +8,7 @@ use crate::api::{
     DownloadOptions, RedundantUploadOptions, UploadResult, prepare_download_headers,
     prepare_redundant_upload_headers,
 };
-use crate::client::{Inner, request};
+use crate::client::{Inner, MAX_JSON_RESPONSE_BYTES, request};
 use crate::swarm::{BatchId, Error, Reference};
 
 use super::FileApi;
@@ -61,7 +61,7 @@ impl FileApi {
             Inner::apply_headers(builder, prepare_redundant_upload_headers(batch_id, opts));
         let resp = self.inner.send(builder).await?;
         let headers = resp.headers().clone();
-        let body: UploadBody = serde_json::from_slice(&resp.bytes().await?)?;
+        let body: UploadBody = serde_json::from_slice(&Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?)?;
         UploadResult::from_response(&body.reference, &headers)
     }
 

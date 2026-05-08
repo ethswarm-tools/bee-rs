@@ -14,12 +14,22 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use bytes::{Bytes, BytesMut};
 use reqwest::{Method, RequestBuilder};
 use serde::de::DeserializeOwned;
 use url::Url;
 
 use crate::api::HeaderPairs;
-use crate::swarm::{Error, RESPONSE_BODY_CAP};
+use crate::swarm::{Error, RESPONSE_BODY_CAP, redact_url};
+
+/// Maximum size of a structured JSON / NDJSON response body that the
+/// crate will buffer. Bee responses larger than this are rejected
+/// before the body is fully read; bulk file downloads should bypass
+/// the in-memory pipeline via [`crate::file::FileApi::download_file_response`].
+///
+/// 32 MiB matches bee-go's `swarm.MaxJSONResponseBytes` and bee-py's
+/// `MAX_RESPONSE_BYTES`.
+pub const MAX_JSON_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 
 /// Shared HTTP/state used by every sub-service.
 #[derive(Debug)]
@@ -48,7 +58,12 @@ impl Inner {
     pub(crate) async fn send(&self, builder: RequestBuilder) -> Result<reqwest::Response, Error> {
         let request = builder.build()?;
         let method = request.method().to_string();
-        let url = request.url().to_string();
+        // Redact query string and fragment before logging or storing in
+        // an error: Bee uses the query for SOC signatures (?sig=) and
+        // Act publisher keys (?recipient=); callers may also (mistakenly)
+        // put auth tokens there. The path itself is hex / identifier-only
+        // and considered public.
+        let redacted = redact_url(request.url());
         let start = Instant::now();
 
         let resp = self.http.execute(request).await?;
@@ -59,7 +74,7 @@ impl Inner {
             tracing::debug!(
                 target: "bee::http",
                 method = %method,
-                url = %url,
+                url = %redacted,
                 status,
                 elapsed_ms,
                 "bee api request"
@@ -77,7 +92,7 @@ impl Inner {
         tracing::debug!(
             target: "bee::http",
             method = %method,
-            url = %url,
+            url = %redacted,
             status,
             elapsed_ms,
             body_len = body.len(),
@@ -85,20 +100,53 @@ impl Inner {
         );
         Err(Error::Response {
             method,
-            url,
+            url: redacted,
             status,
             status_text,
             body: body[..n].to_vec(),
         })
     }
 
-    /// Send and parse the response body as JSON.
+    /// Read the response body with a hard size cap. Use this anywhere
+    /// a structured (JSON / NDJSON) response is expected; bulk file
+    /// downloads should use [`reqwest::Response::bytes_stream`] or
+    /// [`reqwest::Response::chunk`] directly so the caller controls
+    /// the buffering policy.
+    ///
+    /// Rejects upfront based on `Content-Length` when present;
+    /// streams chunks otherwise and aborts as soon as the cap is
+    /// exceeded.
+    pub(crate) async fn read_capped(
+        mut resp: reqwest::Response,
+        max_bytes: usize,
+    ) -> Result<Bytes, Error> {
+        if let Some(len) = resp.content_length() {
+            if len > max_bytes as u64 {
+                return Err(Error::argument(format!(
+                    "response body exceeds limit ({len} > {max_bytes} bytes)"
+                )));
+            }
+        }
+        let mut buf = BytesMut::new();
+        while let Some(chunk) = resp.chunk().await? {
+            if buf.len() + chunk.len() > max_bytes {
+                return Err(Error::argument(format!(
+                    "response body exceeds limit (>{max_bytes} bytes)"
+                )));
+            }
+            buf.extend_from_slice(&chunk);
+        }
+        Ok(buf.freeze())
+    }
+
+    /// Send and parse the response body as JSON, capped at
+    /// [`MAX_JSON_RESPONSE_BYTES`].
     pub(crate) async fn send_json<T: DeserializeOwned>(
         &self,
         builder: RequestBuilder,
     ) -> Result<T, Error> {
         let resp = self.send(builder).await?;
-        let bytes = resp.bytes().await?;
+        let bytes = Self::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 

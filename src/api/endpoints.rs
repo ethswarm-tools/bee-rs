@@ -7,7 +7,7 @@ use bytes::Bytes;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::client::{Inner, request};
+use crate::client::{Inner, MAX_JSON_RESPONSE_BYTES, request};
 use crate::swarm::{BatchId, Error, Reference};
 
 /// Handle exposing the generic `api/*` endpoints (pin, tag,
@@ -85,7 +85,7 @@ impl ApiService {
             builder = builder.query(&[("ref", r.to_hex())]);
         }
         let resp = self.inner.send(builder).await?;
-        let bytes = resp.bytes().await?;
+        let bytes = Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?;
         let mut out = Vec::new();
         for line in bytes.split(|&b| b == b'\n') {
             let trimmed = trim_ws(line);
@@ -191,7 +191,7 @@ impl ApiService {
         // Bee uses camelCase here; accept either via try_from on the
         // body bytes.
         let resp = self.inner.send(builder).await?;
-        let bytes = resp.bytes().await?;
+        let bytes = Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?;
         if let Ok(r) = serde_json::from_slice::<CamelResp>(&bytes) {
             return Ok(r.is_retrievable);
         }

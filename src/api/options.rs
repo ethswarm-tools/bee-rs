@@ -282,20 +282,62 @@ pub fn prepare_file_upload_headers(
     }
 }
 
+/// Validate that the user-controlled string fields of
+/// [`CollectionUploadOptions`] (`index_document`, `error_document`)
+/// don't contain CR / LF / NUL bytes. reqwest itself rejects these at
+/// request-build time, but the resulting error is a generic
+/// `InvalidHeaderValue` deep in the I/O path; surfacing it early as
+/// [`Error::Argument`] is cleaner.
+pub fn validate_collection_upload_options(
+    opts: Option<&CollectionUploadOptions>,
+) -> Result<(), crate::swarm::Error> {
+    fn check(field: &str, value: &str) -> Result<(), crate::swarm::Error> {
+        for b in value.bytes() {
+            if b == b'\r' || b == b'\n' || b == 0 {
+                return Err(crate::swarm::Error::argument(format!(
+                    "CollectionUploadOptions.{field} contains a forbidden byte (CR / LF / NUL)"
+                )));
+            }
+        }
+        Ok(())
+    }
+    if let Some(o) = opts {
+        if let Some(ref s) = o.index_document {
+            check("index_document", s)?;
+        }
+        if let Some(ref s) = o.error_document {
+            check("error_document", s)?;
+        }
+    }
+    Ok(())
+}
+
 /// Build the header set for a tar `POST /bzz` collection upload.
+///
+/// Caller should run [`validate_collection_upload_options`] first to
+/// fail fast on header-injection payloads in `index_document` /
+/// `error_document`; this function silently drops values containing
+/// CR / LF / NUL as defense in depth.
 pub fn prepare_collection_upload_headers(
     batch_id: &BatchId,
     opts: Option<&CollectionUploadOptions>,
 ) -> HeaderPairs {
+    fn safe(s: &str) -> bool {
+        !s.bytes().any(|b| b == b'\r' || b == b'\n' || b == 0)
+    }
     match opts {
         None => prepare_upload_headers(batch_id, None),
         Some(o) => {
             let mut out = prepare_upload_headers(batch_id, Some(&o.base));
             if let Some(ref idx) = o.index_document {
-                out.push(("Swarm-Index-Document", idx.clone()));
+                if safe(idx) {
+                    out.push(("Swarm-Index-Document", idx.clone()));
+                }
             }
             if let Some(ref err) = o.error_document {
-                out.push(("Swarm-Error-Document", err.clone()));
+                if safe(err) {
+                    out.push(("Swarm-Error-Document", err.clone()));
+                }
             }
             if let Some(level) = o.redundancy_level {
                 if !matches!(level, RedundancyLevel::Off) {

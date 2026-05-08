@@ -5,7 +5,7 @@ use reqwest::Method;
 use serde::Deserialize;
 
 use crate::api::{UploadOptions, UploadResult, prepare_upload_headers};
-use crate::client::{Inner, request};
+use crate::client::{Inner, MAX_JSON_RESPONSE_BYTES, request};
 use crate::swarm::{
     BatchId, Error, EthAddress, Identifier, PrivateKey, Reference, Signature, SingleOwnerChunk,
     calculate_single_owner_chunk_address, make_single_owner_chunk, unmarshal_single_owner_chunk,
@@ -40,7 +40,7 @@ impl FileApi {
         let builder = Inner::apply_headers(builder, prepare_upload_headers(batch_id, opts));
         let resp = self.inner.send(builder).await?;
         let headers = resp.headers().clone();
-        let body: UploadBody = serde_json::from_slice(&resp.bytes().await?)?;
+        let body: UploadBody = serde_json::from_slice(&Inner::read_capped(resp, MAX_JSON_RESPONSE_BYTES).await?)?;
         UploadResult::from_response(&body.reference, &headers)
     }
 
