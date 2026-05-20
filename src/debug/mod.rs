@@ -5,6 +5,7 @@ mod chequebook;
 mod loggers;
 mod node;
 mod peers;
+mod pprof;
 mod transactions;
 
 pub use accounting::{

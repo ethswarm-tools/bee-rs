@@ -308,6 +308,85 @@ async fn set_logger_verbosity_legacy_returns_error() {
 }
 
 // =====================================================================
+// pprof runtime profiles (raw binary blobs)
+// =====================================================================
+
+#[tokio::test]
+async fn pprof_profile_sends_seconds_and_returns_raw_bytes() {
+    let server = MockServer::start().await;
+    let blob = b"\x1f\x8b\x08\x00pprof-cpu-blob".to_vec();
+    Mock::given(method("GET"))
+        .and(path("/debug/pprof/profile"))
+        .and(query_param("seconds", "5"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(blob.clone()))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let bytes = client.debug().pprof_profile(5).await.unwrap();
+    assert_eq!(bytes.as_ref(), blob.as_slice());
+}
+
+#[tokio::test]
+async fn pprof_trace_sends_seconds_and_returns_raw_bytes() {
+    let server = MockServer::start().await;
+    let blob = b"go-trace-binary-blob".to_vec();
+    Mock::given(method("GET"))
+        .and(path("/debug/pprof/trace"))
+        .and(query_param("seconds", "3"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(blob.clone()))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let bytes = client.debug().pprof_trace(3).await.unwrap();
+    assert_eq!(bytes.as_ref(), blob.as_slice());
+}
+
+#[tokio::test]
+async fn pprof_heap_has_no_seconds_param_and_returns_bytes() {
+    let server = MockServer::start().await;
+    let blob = b"\x1f\x8bheap-profile".to_vec();
+    Mock::given(method("GET"))
+        .and(path("/debug/pprof/heap"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(blob.clone()))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let bytes = client.debug().pprof_heap().await.unwrap();
+    assert_eq!(bytes.as_ref(), blob.as_slice());
+}
+
+#[tokio::test]
+async fn pprof_generic_name_hits_path() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/debug/pprof/goroutine"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(b"goroutines".to_vec()))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let bytes = client.debug().pprof("goroutine", None).await.unwrap();
+    assert_eq!(bytes.as_ref(), b"goroutines");
+}
+
+#[tokio::test]
+async fn pprof_404_maps_to_response_error_when_debug_api_disabled() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/debug/pprof/heap"))
+        .respond_with(ResponseTemplate::new(404).set_body_string("not found"))
+        .mount(&server)
+        .await;
+
+    let client = Client::new(&server.uri()).unwrap();
+    let err = client.debug().pprof_heap().await.unwrap_err();
+    assert_eq!(err.status(), Some(404));
+}
+
+// =====================================================================
 // PSS send (HTTP)
 // =====================================================================
 
